@@ -1,8 +1,7 @@
 package com.xclhove.xnote.entity.dto;
 
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.xclhove.xnote.enums.UserStatus;
+import com.xclhove.xnote.enums.entityattribute.UserStatus;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;

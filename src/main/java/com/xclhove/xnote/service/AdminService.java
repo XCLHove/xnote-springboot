@@ -2,7 +2,6 @@ package com.xclhove.xnote.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xclhove.xnote.entity.table.Admin;
-import com.xclhove.xnote.util.Result;
 
 import java.util.List;
 
@@ -16,7 +15,7 @@ public interface AdminService extends IService<Admin> {
      * @param admin 管理员信息
      * @return 已添加的管理员信息
      */
-    public Result<Admin> addAdmin(Admin admin);
+    public boolean addAdmin(Admin admin);
     
     /**
      * 删除管理员
@@ -24,7 +23,7 @@ public interface AdminService extends IService<Admin> {
      * @param id 管理员id
      * @return 已删除的管理员信息
      */
-    public Result<Admin> deleteAdmin(Integer id);
+    public boolean deleteAdmin(Integer id);
     
     /**
      * 修改管理员信息
@@ -32,7 +31,7 @@ public interface AdminService extends IService<Admin> {
      * @param admin 管理员信息
      * @return 已修改的管理员信息
      */
-    public Result<Admin> changeAdmin(Admin admin);
+    public boolean changeAdmin(Admin admin);
     
     /**
      * 获取管理员信息
@@ -40,7 +39,7 @@ public interface AdminService extends IService<Admin> {
      * @param id 管理员id
      * @return 管理员信息
      */
-    public Result<Admin> getAdmin(Integer id);
+    public Admin getAdmin(Integer id);
     
     /**
      * 分页获取所有管理员信息
@@ -49,9 +48,5 @@ public interface AdminService extends IService<Admin> {
      * @param pageSize   每页大小
      * @return 管理员信息集合
      */
-    public Result<List<Admin>> getAdmins(Integer pageNumber, Integer pageSize);
-    /**
-     * 管理员登录
-     *
-     */
+    public List<Admin> getAdmins(Integer pageNumber, Integer pageSize);
 }

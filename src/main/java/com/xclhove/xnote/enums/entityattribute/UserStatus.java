@@ -1,4 +1,4 @@
-package com.xclhove.xnote.enums;
+package com.xclhove.xnote.enums.entityattribute;
 
 import com.baomidou.mybatisplus.annotation.EnumValue;
 import com.fasterxml.jackson.annotation.JsonValue;

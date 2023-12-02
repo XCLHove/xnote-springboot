@@ -2,7 +2,6 @@ package com.xclhove.xnote.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xclhove.xnote.entity.table.User;
-import com.xclhove.xnote.util.Result;
 
 /**
  * @author xclhove
@@ -10,37 +9,42 @@ import com.xclhove.xnote.util.Result;
 public interface UserService extends IService<User> {
     /**
      * 用户注册
-     * @param user 用户信息
-     * @return 注册成功后用户信息
+     *
+     * @param user User对象
+     * @return 是否注册成功
      */
-    Result<User> register(User user);
+    boolean register(User user);
     
     /**
-     * 以后注册
-     * @param account 账号
+     * 用户注册
+     *
+     * @param account  账号
      * @param password 密码
-     * @return token
+     * @return token字符串
      */
-    Result<String> login(String account, String password);
+    String login(String account, String password);
     
     /**
      * 用户修改信息
-     * @param user 用户信息
-     * @return 用户更新成功后的信息
+     *
+     * @param user User对象
+     * @return 是否更新成功
      */
-    Result<User> updateInfo(User user);
+    boolean updateInfo(User user);
     
     /**
      * 通过用户id查询用户信息
+     *
      * @param userId 用户id
-     * @return 用户信息
+     * @return User对象
      */
-    Result<User> queryUserInfoById(Integer userId);
+    User queryById(Integer userId);
     
     /**
-     * 禁封用户
-     * @param userId 要禁封的用户
-     * @return 用户信息
+     * 通过用户id禁封用户
+     *
+     * @param userId 用户id
+     * @return 是否禁封成功
      */
-    Result<User> ban(Integer userId);
+    boolean banById(Integer userId);
 }

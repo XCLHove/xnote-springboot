@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * 加密工具类
+ *
  * @author xclhove
  */
 public class EncryptUtil {

@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * 全局异常配置
  *
@@ -21,7 +23,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ServiceException.class)
     @ResponseBody
-    public Result<String> serviceHandle(ServiceException serviceException) {
+    public Result<String> serviceHandle(HttpServletResponse response, ServiceException serviceException) {
+        response.setContentType("application/json");
         return Result.error(serviceException.getStatus(),serviceException.getMessage());
     }
 }

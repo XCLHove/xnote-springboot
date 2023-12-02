@@ -4,9 +4,9 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xclhove.xnote.entity.table.Note;
+import com.xclhove.xnote.exception.NoteServiceException;
 import com.xclhove.xnote.mapper.NoteMapper;
 import com.xclhove.xnote.service.NoteService;
-import com.xclhove.xnote.util.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -22,110 +22,99 @@ import java.util.Objects;
 @Slf4j
 public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements NoteService {
     @Override
-    public Result<Note> getNote(Integer noteId) {
+    public Note getNote(Integer noteId) {
         LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Note::getId, noteId);
         Note note = this.getOne(queryWrapper);
-        if (note == null) {
-            return Result.error("没有该笔记！");
-        }
-        return Result.success(note);
+        if (note == null) throw new NoteServiceException("没有该笔记！");
+        return note;
     }
     
     @Override
-    public Result<Integer> addNote(Note note) {
+    public boolean addNote(Note note) {
+        String title = note.getTitle();
+        if (StrUtil.isBlank(title)) title = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+        note.setTitle(title);
+        boolean saveSuccess = false;
         try {
-            String title = note.getTitle();
-            if (StrUtil.isBlank(title)) {
-                title = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
-            }
-            note.setTitle(title);
-            boolean saveSuccess = this.save(note);
-            if (!saveSuccess) {
-                return Result.error("保存失败！");
-            }
-            LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Note::getTitle, note.getTitle())
-                    .eq(Note::getUserId, note.getUserId());
-            note = this.getOne(queryWrapper);
-            if (note == null) {
-                return Result.error("保存失败！");
-            }
-            return Result.success(note.getId());
+            saveSuccess = this.save(note);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new NoteServiceException("出现异常，保存失败！");
+        }
+        if (!saveSuccess) throw new NoteServiceException("保存失败！");
+        return true;
+    }
+    
+    @Override
+    public boolean updateNote(Note newNote) {
+        
+        Note oldNote = this.getById(newNote.getId());
+        if (oldNote == null) throw new NoteServiceException("笔记不存在!");
+        if (!Objects.equals(newNote.getUserId(), oldNote.getUserId()))
+            throw new NoteServiceException("你没有修改该笔记的权限！");
+        boolean updateSuccess = false;
+        try {
+            updateSuccess = this.updateById(newNote);
         } catch (Exception e) {
             log.error(e.toString());
-            return Result.error("保存失败！");
+            throw new NoteServiceException("出现异常，更新失败！");
         }
+        if (!updateSuccess) throw new NoteServiceException("更新失败！");
+        return true;
     }
     
     @Override
-    public Result<Integer> updateNote(Note newNote) {
+    public boolean deleteNote(Integer noteId) {
+        boolean deleteSuccess = false;
         try {
-            Note oldNote = this.getById(newNote.getId());
-            if (oldNote == null) {
-                return Result.error("笔记不存在!");
-            }
-            if (!Objects.equals(newNote.getUserId(), oldNote.getUserId())) {
-                return Result.error("你没有修改该笔记的权限！");
-            }
-            boolean updateSuccess = this.updateById(newNote);
-            if (!updateSuccess) {
-                return Result.error("更新失败！");
-            }
-            return Result.success(newNote.getId());
+            deleteSuccess = this.removeById(noteId);
         } catch (Exception e) {
             log.error(e.toString());
-            return Result.error("更新失败！");
+            throw new NoteServiceException("出现异常，删除失败！");
         }
+        if (!deleteSuccess) throw new NoteServiceException("删除失败！");
+        return true;
     }
     
     @Override
-    public Result<Integer> deleteNote(Integer noteId) {
-        try {
-            boolean deleteSuccess = this.removeById(noteId);
-            if (!deleteSuccess) {
-                return Result.error("删除失败！");
-            }
-            return Result.success(noteId);
-        } catch (Exception e) {
-            log.error(e.toString());
-            return Result.error("删除失败！");
-        }
-    }
-    
-    @Override
-    public Result<List<Note>> getUserAllNote(Integer userId) {
-        try {
-            LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.eq(Note::getUserId, userId);
-            List<Note> userNotes = this.list(queryWrapper);
-            return Result.success(userNotes);
-        } catch (Exception e) {
-            log.error(e.toString());
-            return Result.error("获取失败！");
-        }
-    }
-    
-    @Override
-    public Result<List<Note>> searchNote(String text) {
-        try {
-            LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.like(Note::getTitle, text)
-                    .or().like(Note::getContent, text)
-                    .or().like(Note::getKeywords, text);
-            List<Note> notes = this.list(queryWrapper);
-            return Result.success(notes);
-        } catch (Exception e) {
-            log.error(e.toString());
-            return Result.error("搜索失败！");
-        }
-    }
-    
-    @Override
-    public Result<List<Note>> getAllNote() {
+    public List<Note> getUserAllNote(Integer userId) {
         LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(Note::getId,Note::getTitle,Note::getUserId);
-        List<Note> notes = this.list(queryWrapper);
-        return Result.success(notes);
+        queryWrapper.eq(Note::getUserId, userId);
+        try {
+            List<Note> userNotes = this.list(queryWrapper);
+            return userNotes;
+        } catch (Exception e) {
+            log.error(e.toString());
+            throw new NoteServiceException("出现异常，获取失败！");
+        }
+    }
+    
+    @Override
+    public List<Note> searchNote(String text) {
+        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(Note::getTitle, text)
+                .or().like(Note::getContent, text)
+                .or().like(Note::getKeywords, text);
+        try {
+            List<Note> notes = this.list(queryWrapper);
+            return notes;
+        } catch (Exception e) {
+            log.error(e.toString());
+            throw new NoteServiceException("出现异常，搜索失败！");
+        }
+    }
+    
+    @Override
+    public List<Note> getAllNote() {
+        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.select(Note::getId, Note::getTitle, Note::getUserId);
+        try {
+            List<Note> notes = this.list(queryWrapper);
+            return notes;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new NoteServiceException("出现异常，获取失败！");
+        }
     }
 }

@@ -4,11 +4,14 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.xclhove.xnote.annotations.UserJwtIntercept;
 import com.xclhove.xnote.entity.table.User;
-import com.xclhove.xnote.exception.UserLoginException;
+import com.xclhove.xnote.enums.entityattribute.UserStatus;
+import com.xclhove.xnote.exception.ServiceException;
+import com.xclhove.xnote.exception.UserTokenException;
 import com.xclhove.xnote.util.TokenUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -17,37 +20,35 @@ import javax.servlet.http.HttpServletResponse;
  * @author xclhove
  */
 @Slf4j
-public class UserJwtInterceptor implements HandlerInterceptor {
+@Component
+@RequiredArgsConstructor
+public class UserJwtInterceptor extends ServiceInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {
             //如果不是映射到方法直接通过
-            if (!(handler instanceof HandlerMethod)) {
-                return true;
-            }
+            if (!(handler instanceof HandlerMethod)) return true;
             
             HandlerMethod handlerMethod = (HandlerMethod) handler;
             UserJwtIntercept loginIntercept = handlerMethod.getMethod().getAnnotation(UserJwtIntercept.class);
             //如果要访问的方法上没有加这个注解，那么就说明这个方法不需要拦截，否则就需要进行拦截
-            if(null == loginIntercept) {
-                return true;
-            }
+            if(null == loginIntercept) return true;
             
             String token = request.getHeader("token");
-            if (StrUtil.isBlank(token)) {
-                throw new UserLoginException("未登录！");
-            }
+            if (StrUtil.isBlank(token)) throw new UserTokenException("未登录！");
             Integer id = TokenUtil.getId(token);
             User user = Db.getById(id, User.class);
+            if (user.getStatus() == UserStatus.BANED) throw new UserTokenException("用户已被禁封！");
             String password = user.getPassword();
             //校验token
-            if (!TokenUtil.validate(token, password)) {
-                throw new UserLoginException("token校验未通过！");
-            }
+            if (!TokenUtil.validate(token, password)) throw new UserTokenException("token校验未通过！");
             return true;
-        } catch (Exception e) {
-            log.error(e.toString());
-            throw new UserLoginException("token校验未通过！");
+        } catch (ServiceException serviceException) {
+            throw serviceException;
+        }
+        catch (Exception e) {
+            log.error(e.getMessage());
+            throw new UserTokenException("出现异常，token校验未通过！");
         }
     }
 }

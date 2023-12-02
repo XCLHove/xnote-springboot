@@ -1,7 +1,6 @@
 package com.xclhove.xnote.controller;
 
 import com.xclhove.xnote.annotations.UserJwtIntercept;
-import com.xclhove.xnote.annotations.UserStatusIntercept;
 import com.xclhove.xnote.entity.table.Note;
 import com.xclhove.xnote.service.NoteService;
 import com.xclhove.xnote.util.Result;
@@ -26,27 +25,29 @@ public class NoteController {
     private final NoteService noteService;
     
     @GetMapping
-    @ApiOperation(value = "获取所有笔记")
+    @ApiOperation(value = "获取所有笔记（不包括内容）")
     public Result<List<Note>> getAllNote() {
-        return noteService.getAllNote();
+        List<Note> allNote = noteService.getAllNote();
+        return Result.success(allNote);
     }
     
     @GetMapping("/user/{userId}")
-    @ApiOperation(value = "获取某个用户的全部笔记")
+    @ApiOperation(value = "获取某个用户的全部笔记（不包括内容）")
     public Result<List<Note>> getUserAllNote(@PathVariable
                                              @ApiParam(value = "用户id", example = "1")
                                              Integer userId) {
-        return noteService.getUserAllNote(userId);
+        List<Note> userNotes = noteService.getUserAllNote(userId);
+        return Result.success(userNotes);
     }
     
     @GetMapping("/user/self")
     @UserJwtIntercept
-    @UserStatusIntercept
-    @ApiOperation(value = "获取自己的全部笔记")
+    @ApiOperation(value = "获取自己的全部笔记（不包括内容）")
     public Result<List<Note>> getSelfNote(HttpServletRequest request) {
         String token = request.getHeader("token");
         int userId = TokenUtil.getId(token);
-        return noteService.getUserAllNote(userId);
+        List<Note> userAllNote = noteService.getUserAllNote(userId);
+        return Result.success(userAllNote);
     }
     
     @GetMapping("/{noteId}")
@@ -54,36 +55,36 @@ public class NoteController {
     public Result<Note> getOneNote(@PathVariable
                                    @ApiParam(value = "笔记id", example = "1")
                                    Integer noteId) {
-        return noteService.getNote(noteId);
+        Note note = noteService.getNote(noteId);
+        return Result.success(note);
     }
     
     @PutMapping
     @UserJwtIntercept
-    @UserStatusIntercept
     @ApiOperation(value = "添加笔记")
-    public Result<Integer> addNote(HttpServletRequest request,
+    public Result<Object> addNote(HttpServletRequest request,
                                 @RequestBody
                                 @ApiParam(value = "笔记信息")
                                 Note note) {
         String token = request.getHeader("token");
         Integer userId = TokenUtil.getId(token);
         note.setUserId(userId);
-        return noteService.addNote(note);
+        noteService.addNote(note);
+        return Result.success();
     }
     
     @DeleteMapping("/{noteId}")
     @UserJwtIntercept
-    @UserStatusIntercept
     @ApiOperation(value = "删除笔记")
-    public Result<Integer> deleteNote(@PathVariable
+    public Result<Object> deleteNote(@PathVariable
                                       @ApiParam(value = "笔记id", example = "1")
                                       Integer noteId) {
-        return noteService.deleteNote(noteId);
+        noteService.deleteNote(noteId);
+        return Result.success();
     }
     
     @PostMapping
     @UserJwtIntercept
-    @UserStatusIntercept
     @ApiOperation(value = "更新笔记")
     public Result<Integer> updateNote(HttpServletRequest request,
                                       @RequestBody
@@ -92,7 +93,8 @@ public class NoteController {
         String token = request.getHeader("token");
         Integer userId = TokenUtil.getId(token);
         note.setUserId(userId);
-        return noteService.updateNote(note);
+        noteService.updateNote(note);
+        return Result.success();
     }
     
     @GetMapping("/search/{text}")
@@ -100,6 +102,7 @@ public class NoteController {
     public Result<List<Note>> searchNote(@PathVariable
                                          @ApiParam(value = "搜索内容")
                                          String text) {
-        return noteService.searchNote(text);
+        List<Note> notes = noteService.searchNote(text);
+        return Result.success(notes);
     }
 }

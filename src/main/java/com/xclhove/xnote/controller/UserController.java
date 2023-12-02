@@ -3,7 +3,6 @@ package com.xclhove.xnote.controller;
 import cn.hutool.core.bean.BeanUtil;
 import com.xclhove.xnote.annotations.AdminJwtIntercept;
 import com.xclhove.xnote.annotations.UserJwtIntercept;
-import com.xclhove.xnote.annotations.UserStatusIntercept;
 import com.xclhove.xnote.entity.dto.UserDTO;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.service.UserService;
@@ -12,7 +11,7 @@ import com.xclhove.xnote.util.TokenUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,16 +22,17 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 @RequestMapping("/users")
 @Api(tags = "用户相关接口")
+@RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
     
     @GetMapping("/{userId}")
     @ApiOperation(value = "查询用户信息")
-    public Result<User> queryUserInfo(@PathVariable
+    public Result<User> queryUserById(@PathVariable
                                       @ApiParam(value = "用户id", example = "1")
                                       Integer userId) {
-        return userService.queryUserInfoById(userId);
+        User user = userService.queryById(userId);
+        return Result.success(user);
     }
     
     @GetMapping("/login")
@@ -43,7 +43,8 @@ public class UserController {
                                 @RequestParam
                                 @ApiParam(value = "密码", example = "123456")
                                 String password) {
-        return userService.login(account, password);
+        String token = userService.login(account, password);
+        return Result.success(token);
     }
     
     @GetMapping("/self")
@@ -51,22 +52,23 @@ public class UserController {
     @ApiOperation(value = "查询用户自己的信息")
     public Result<User> querySelfInfo(HttpServletRequest request) {
         String token = request.getHeader("token");
-        int userId = TokenUtil.getId(token);
-        return userService.queryUserInfoById(userId);
+        Integer userId = TokenUtil.getId(token);
+        User user = userService.queryById(userId);
+        return Result.success(user);
     }
     
     @PutMapping("/register")
     @ApiOperation(value = "用户注册")
-    public Result<User> register(@RequestBody
+    public Result<Object> register(@RequestBody
                                  @ApiParam(value = "用户信息")
                                  UserDTO userDTO) {
         User user = BeanUtil.copyProperties(userDTO, User.class);
-        return userService.register(user);
+        userService.register(user);
+        return Result.success();
     }
     
     @PostMapping
     @UserJwtIntercept
-    @UserStatusIntercept
     @ApiOperation(value = "更新用户信息")
     public Result<User> update(HttpServletRequest request,
                                @RequestBody
@@ -76,7 +78,8 @@ public class UserController {
         Integer userId = TokenUtil.getId(token);
         User user = BeanUtil.copyProperties(userDTO, User.class);
         user.setId(userId);
-        return userService.updateInfo(user);
+        userService.updateInfo(user);
+        return Result.success();
     }
     
     @PostMapping("/ban/{userId}")
@@ -85,6 +88,7 @@ public class UserController {
     public Result<User> ban(@PathVariable
                             @ApiParam(value = "用户id", example = "1")
                             Integer userId) {
-        return userService.ban(userId);
+        userService.banById(userId);
+        return Result.success();
     }
 }

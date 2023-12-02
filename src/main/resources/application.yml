@@ -63,6 +63,11 @@ mybatis-plus.configuration.default-enum-type-handler: com.baomidou.mybatisplus.c
 spring.thymeleaf.check-template-location: false
 #为null时不返回属性
 spring.jackson.default-property-inclusion: NON_EMPTY
+
+xnote:
+  image:
+    allow-type: ^image/(png|jpg|jpeg|svg|ico|gif|bmp)+$
+    allow-size: 10485760 #10MB
 ---
 #应用服务WEB访问端口
 server.port: 8080
@@ -90,3 +95,10 @@ mybatis-plus:
 logging:
   level:
     root: info
+
+#minio
+minio:
+  endpoint: http://localhost:9090 #Minio服务所在地址
+  bucketName: xnote #存储桶名称
+  accessKey: AfJsSW0IRBDbhLDcF3Qa #访问的key
+  secretKey: ZudL5dK4OtpSxNm3M4v2aTBYfJ0aS4F0TcgJfZkl #访问的秘钥

@@ -7,6 +7,7 @@ import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
 import com.xclhove.xnote.exception.ServiceException;
 import com.xclhove.xnote.exception.UserTokenException;
+import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,7 @@ public class UserJwtInterceptor extends ServiceInterceptor {
             String password = user.getPassword();
             //校验token
             if (!TokenUtil.validate(token, password)) throw new UserTokenException("token校验未通过！");
+            ThreadLocalUtil.set("id", id);
             return true;
         } catch (ServiceException serviceException) {
             throw serviceException;

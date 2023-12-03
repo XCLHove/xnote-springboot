@@ -85,13 +85,8 @@ spring:
     #数据库密码
     password: 123456
 
-#mybatis-plus
-mybatis-plus:
-  configuration:
-    #控制台打印完整带参数SQL语句
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    #驼峰转换
-    #map-underscore-to-camel-case: false
+#mybatis-plus 控制台打印完整带参数SQL语句
+#mybatis-plus.configuration.log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 logging:
   level:
     root: info
@@ -100,5 +95,5 @@ logging:
 minio:
   endpoint: http://localhost:9090 #Minio服务所在地址
   bucketName: xnote #存储桶名称
-  accessKey: AfJsSW0IRBDbhLDcF3Qa #访问的key
-  secretKey: ZudL5dK4OtpSxNm3M4v2aTBYfJ0aS4F0TcgJfZkl #访问的秘钥
+  accessKey: admin #访问的key
+  secretKey: 12345678 #访问的秘钥

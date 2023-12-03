@@ -7,6 +7,7 @@ import com.xclhove.xnote.entity.dto.UserDTO;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.service.UserService;
 import com.xclhove.xnote.util.Result;
+import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -50,9 +51,8 @@ public class UserController {
     @GetMapping("/self")
     @UserJwtIntercept
     @ApiOperation(value = "查询用户自己的信息")
-    public Result<User> querySelfInfo(HttpServletRequest request) {
-        String token = request.getHeader("token");
-        Integer userId = TokenUtil.getId(token);
+    public Result<User> querySelfInfo() {
+        Integer userId = (Integer) ThreadLocalUtil.get("id");
         User user = userService.queryById(userId);
         return Result.success(user);
     }

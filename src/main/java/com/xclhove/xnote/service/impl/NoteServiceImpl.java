@@ -2,7 +2,10 @@ package com.xclhove.xnote.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xclhove.xnote.entity.dto.NotePageDTO;
 import com.xclhove.xnote.entity.table.Note;
 import com.xclhove.xnote.exception.NoteServiceException;
 import com.xclhove.xnote.mapper.NoteMapper;
@@ -22,7 +25,7 @@ import java.util.Objects;
 @Slf4j
 public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements NoteService {
     @Override
-    public Note getNote(Integer noteId) {
+    public Note getNoteById(Integer noteId) {
         LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Note::getId, noteId);
         Note note = this.getOne(queryWrapper);
@@ -31,7 +34,7 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     }
     
     @Override
-    public boolean addNote(Note note) {
+    public Note addNote(Note note) {
         String title = note.getTitle();
         if (StrUtil.isBlank(title)) title = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
         note.setTitle(title);
@@ -43,32 +46,39 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             throw new NoteServiceException("出现异常，保存失败！");
         }
         if (!saveSuccess) throw new NoteServiceException("保存失败！");
-        return true;
+        note.setTitle(null);
+        note.setKeywords(null);
+        note.setContent(null);
+        return note;
     }
     
     @Override
-    public boolean updateNote(Note newNote) {
-        
-        Note oldNote = this.getById(newNote.getId());
-        if (oldNote == null) throw new NoteServiceException("笔记不存在!");
-        if (!Objects.equals(newNote.getUserId(), oldNote.getUserId()))
-            throw new NoteServiceException("你没有修改该笔记的权限！");
+    public Note updateNote(Note note) {
         boolean updateSuccess = false;
         try {
-            updateSuccess = this.updateById(newNote);
+            LambdaUpdateWrapper<Note> updateWrapper = new LambdaUpdateWrapper<>();
+            updateWrapper.eq(Note::getId, note.getId());
+            updateWrapper.eq(Note::getUserId, note.getUserId());
+            updateSuccess = this.update(note, updateWrapper);
         } catch (Exception e) {
             log.error(e.toString());
             throw new NoteServiceException("出现异常，更新失败！");
         }
         if (!updateSuccess) throw new NoteServiceException("更新失败！");
-        return true;
+        note.setTitle(null);
+        note.setKeywords(null);
+        note.setContent(null);
+        return note;
     }
     
     @Override
-    public boolean deleteNote(Integer noteId) {
+    public boolean deleteNote(Integer userId, Integer noteId) {
         boolean deleteSuccess = false;
         try {
-            deleteSuccess = this.removeById(noteId);
+            LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(Note::getId, noteId);
+            queryWrapper.eq(userId != null, Note::getUserId, userId);
+            deleteSuccess = this.removeById(queryWrapper);
         } catch (Exception e) {
             log.error(e.toString());
             throw new NoteServiceException("出现异常，删除失败！");
@@ -78,43 +88,23 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
     }
     
     @Override
-    public List<Note> getUserAllNote(Integer userId) {
-        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Note::getUserId, userId);
+    public NotePageDTO pageNote(NotePageDTO notePageDTO) {
         try {
-            List<Note> userNotes = this.list(queryWrapper);
-            return userNotes;
-        } catch (Exception e) {
-            log.error(e.toString());
-            throw new NoteServiceException("出现异常，获取失败！");
-        }
-    }
-    
-    @Override
-    public List<Note> searchNote(String text) {
-        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.like(Note::getTitle, text)
-                .or().like(Note::getContent, text)
-                .or().like(Note::getKeywords, text);
-        try {
-            List<Note> notes = this.list(queryWrapper);
-            return notes;
-        } catch (Exception e) {
-            log.error(e.toString());
-            throw new NoteServiceException("出现异常，搜索失败！");
-        }
-    }
-    
-    @Override
-    public List<Note> getAllNote() {
-        LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.select(Note::getId, Note::getTitle, Note::getUserId);
-        try {
-            List<Note> notes = this.list(queryWrapper);
-            return notes;
+            Page<Note> page = new Page<>(notePageDTO.getCurrent(), notePageDTO.getSize());
+            LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.select(Note::getId, Note::getTitle);
+            queryWrapper.eq(notePageDTO.getUserId() != null, Note::getUserId, notePageDTO.getUserId());
+            queryWrapper.like(StrUtil.isNotBlank(notePageDTO.getSearchTitle()), Note::getTitle, notePageDTO.getSearchTitle())
+                    .and(StrUtil.isNotBlank(notePageDTO.getSearchContent()), qw -> qw.like(Note::getContent, notePageDTO.getSearchContent()))
+                    .and(StrUtil.isNotBlank(notePageDTO.getSearchKeyword()), qw -> qw.like(Note::getKeywords, notePageDTO.getSearchKeyword()));
+            List<Note> notes = this.page(page, queryWrapper).getRecords();
+            Integer total = this.list(queryWrapper).size();
+            notePageDTO.setList(notes);
+            notePageDTO.setTotal(total);
+            return notePageDTO;
         } catch (Exception e) {
             log.error(e.getMessage());
-            throw new NoteServiceException("出现异常，获取失败！");
+            throw new NoteServiceException("出现异常，分页失败！");
         }
     }
 }

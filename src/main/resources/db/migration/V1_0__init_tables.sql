@@ -25,7 +25,7 @@ create table if not exists note
 (
     id       int auto_increment
         primary key,
-    title    varchar(30) default (now()) not null comment '标题',
+    title    varchar(255) default (now()) not null comment '标题',
     content  text                        null comment '内容',
     keywords text                        null comment '关键词',
     user_id  int                         not null comment '所属用户id',

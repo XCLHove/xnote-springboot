@@ -12,6 +12,8 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.constraints.Pattern;
+
 /**
  * 笔记相关接口
  *
@@ -33,7 +35,10 @@ public class NoteController {
     
     @GetMapping("/{noteId}")
     @ApiOperation(value = "获取一篇笔记")
-    public Result<Note> getOneNote(@PathVariable @ApiParam(value = "笔记id", example = "1") Integer noteId) {
+    public Result<Note> getOneNote(
+            @PathVariable @ApiParam(value = "笔记id", example = "1")
+            @Pattern(regexp = "^\\w+$", message = "笔记id只能是数字！")
+            Integer noteId) {
         Note note = noteService.getNoteById(noteId);
         return Result.success(note);
     }

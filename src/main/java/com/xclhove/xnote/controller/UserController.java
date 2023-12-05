@@ -13,9 +13,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.Pattern;
 
 /**
  * @author xclhove
@@ -24,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/users")
 @Api(tags = "用户相关接口")
 @RequiredArgsConstructor
+@Validated
 public class UserController {
     private final UserService userService;
     
@@ -31,6 +34,7 @@ public class UserController {
     @ApiOperation(value = "查询用户信息")
     public Result<User> queryUserById(@PathVariable
                                       @ApiParam(value = "用户id", example = "1")
+                                      @Pattern(regexp = "^\\d+$", message = "用户id必须为数字！")
                                       Integer userId) {
         User user = userService.queryById(userId);
         return Result.success(user);
@@ -40,9 +44,11 @@ public class UserController {
     @ApiOperation(value = "用户登录")
     public Result<String> login(@RequestParam
                                 @ApiParam(value = "账号", example = "user123456")
+                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、’_‘、‘.’和‘*’！")
                                 String account,
                                 @RequestParam
                                 @ApiParam(value = "密码", example = "123456")
+                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、’_‘、‘.’和‘*’！")
                                 String password) {
         String token = userService.login(account, password);
         return Result.success(token);
@@ -60,8 +66,8 @@ public class UserController {
     @PutMapping("/register")
     @ApiOperation(value = "用户注册")
     public Result<Object> register(@RequestBody
-                                 @ApiParam(value = "用户信息")
-                                 UserDTO userDTO) {
+                                   @ApiParam(value = "用户信息")
+                                   UserDTO userDTO) {
         User user = BeanUtil.copyProperties(userDTO, User.class);
         userService.register(user);
         return Result.success();

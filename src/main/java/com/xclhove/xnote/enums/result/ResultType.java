@@ -12,6 +12,7 @@ import lombok.Getter;
 public enum ResultType {
     SUCCESS(200, "操作成功！"),
     ERROR(500, "操作失败！"),
+    VALIDATE_EXCEPTION(550, "参数校验异常！"),
     USER_SERVICE_EXCEPTION(600, "用户业务异常!"),
     USER_TOKEN_EXCEPTION(601, "用户token异常！"),
     NOTE_SERVICE_EXCEPTION(700, "笔记业务异常!"),
@@ -20,4 +21,13 @@ public enum ResultType {
     ;
     private final int status;
     private final String message;
+    
+    public static ResultType getResultType(int status) {
+        for (ResultType type : ResultType.values()) {
+            if (type.status == status) {
+                return type;
+            }
+        }
+        return null;
+    }
 }

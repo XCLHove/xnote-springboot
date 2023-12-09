@@ -246,7 +246,7 @@ public class MinioTool {
                             .bucket(minioConfig.getBucketName()).object(fileName)
                             .build()
             );
-            return true;
+            return getFile(fileName) == null;
         } catch (Exception e) {
             log.error(e.getMessage());
             return false;

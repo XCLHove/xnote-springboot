@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author xclhove
@@ -46,7 +45,6 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             throw new NoteServiceException("出现异常，保存失败！");
         }
         if (!saveSuccess) throw new NoteServiceException("保存失败！");
-        note.setTitle(null);
         note.setKeywords(null);
         note.setContent(null);
         return note;
@@ -78,7 +76,7 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             LambdaQueryWrapper<Note> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Note::getId, noteId);
             queryWrapper.eq(userId != null, Note::getUserId, userId);
-            deleteSuccess = this.removeById(queryWrapper);
+            deleteSuccess = this.remove(queryWrapper);
         } catch (Exception e) {
             log.error(e.toString());
             throw new NoteServiceException("出现异常，删除失败！");

@@ -19,6 +19,7 @@ public enum ResultType {
     NOTE_SERVICE_EXCEPTION(700, "笔记业务异常!"),
     ADMIN_SERVICE_EXCEPTION(800, "管理员业务异常！"),
     ADMIN_TOKEN_EXCEPTION(801, "管理员token异常！"),
+    IMAGE_SERVICE_EXCEPTION(900, "图片业务异常！"),
     ;
     private final int status;
     private final String message;

@@ -1,16 +1,20 @@
 package com.xclhove.xnote.controller;
 
-import com.xclhove.xnote.exception.NoteServiceException;
-import com.xclhove.xnote.tool.MinioTool;
+import com.xclhove.xnote.annotations.UserJwtIntercept;
+import com.xclhove.xnote.entity.dto.ImagePageDTO;
+import com.xclhove.xnote.entity.dto.ObjectList;
+import com.xclhove.xnote.entity.table.Image;
+import com.xclhove.xnote.service.ImageService;
 import com.xclhove.xnote.util.Result;
+import com.xclhove.xnote.util.ThreadLocalUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.Pattern;
 
 /**
  * 图片相关接口
@@ -22,26 +26,69 @@ import javax.servlet.http.HttpServletResponse;
 @Api(tags = "图片相关接口")
 @RequiredArgsConstructor
 public class ImageController {
-    @Value("${xnote.image.allow-type}")
-    private String allowType; //允许上传的文件格式
-    @Value("${xnote.image.allow-size}")
-    private Long allowSize; //允许上传的文件大小
-    private final MinioTool minio;
+    private final ImageService imageService;
     
-    @GetMapping("/{imageName}")
+    @GetMapping("downloadByName/{imageName}")
     @ApiOperation(value = "下载图片")
-    public void downloadImage(HttpServletResponse response, @PathVariable String imageName) {
-        minio.downloadFile(imageName, imageName, response);
+    public void downloadByName(HttpServletResponse response, @PathVariable String imageName) {
+        imageService.downloadByName(response, imageName);
     }
     
-    @PostMapping("/upload")
+    @GetMapping("downloadById/{imageId}")
+    @ApiOperation(value = "下载图片")
+    public void downloadById(HttpServletResponse response,
+                             @PathVariable
+                             @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
+                             Integer imageId) {
+        imageService.downloadById(response, imageId);
+    }
+    
+    @PutMapping
     @ApiOperation(value = "上传图片")
-    public Result<String> upload(MultipartFile uploadImage) {
-        if (uploadImage == null) throw new NoteServiceException("不允许上传空文件");
-        String contentType = uploadImage.getContentType();
-        if (!contentType.matches(allowType)) throw new NoteServiceException("不允许上传该格式的图片！");
-        if (uploadImage.getSize() > allowSize) throw new NoteServiceException("上传的文件大小不能超过" + allowSize + "字节！");
-        String fileName = minio.upload(uploadImage);
-        return Result.success(fileName);
+    @UserJwtIntercept
+    public Result<Image> upload(MultipartFile uploadImage) {
+        Integer id = (Integer) ThreadLocalUtil.get("id");
+        Image image = imageService.upload(id, uploadImage);
+        return Result.success(image);
+    }
+    
+    @PostMapping("/deleteByIds")
+    @ApiOperation(value = "通过id删除图片")
+    @UserJwtIntercept
+    public Result<Image> deleteByIds(@RequestBody ObjectList<Integer> ids) {
+        Integer userId = (Integer) ThreadLocalUtil.get("id");
+        imageService.deleteByIds(userId, ids.getValue());
+        return Result.success();
+    }
+    
+    @PostMapping
+    @ApiOperation(value = "修改图片")
+    @UserJwtIntercept
+    public Result<Object> change(@RequestBody Image image) {
+        Integer userId = (Integer) ThreadLocalUtil.get("id");
+        image.setUserId(userId);
+        imageService.change(image);
+        return Result.success();
+    }
+    
+    @GetMapping("/{imageId}")
+    @ApiOperation(value = "获取图片信息")
+    @UserJwtIntercept
+    public Result<Image> get(@PathVariable
+                             @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
+                             Integer imageId) {
+        Integer userId = (Integer) ThreadLocalUtil.get("id");
+        Image image = imageService.get(userId, imageId);
+        return Result.success(image);
+    }
+    
+    @PostMapping("/page")
+    @ApiOperation(value = "分页获取图片")
+    @UserJwtIntercept
+    public Result<ImagePageDTO> page(@RequestBody ImagePageDTO pageDTO) {
+        Integer userId = (Integer) ThreadLocalUtil.get("id");
+        pageDTO.setUserId(userId);
+        ImagePageDTO imagePageDTO = imageService.page(pageDTO);
+        return Result.success(imagePageDTO);
     }
 }

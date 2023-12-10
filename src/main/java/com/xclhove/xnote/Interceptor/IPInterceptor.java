@@ -4,7 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.xclhove.xnote.annotations.UnlockIpFrequencyLimit;
 import com.xclhove.xnote.exception.IpFrequencyException;
-import com.xclhove.xnote.exception.ServiceException;
+import com.xclhove.xnote.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -55,11 +55,14 @@ public class IPInterceptor extends ServiceInterceptor {
             throw new IpFrequencyException("IP访问频率校验失败！");
         }
         if (frequency > (maxFrequencyPerMinute + promptNumber)) return false;
-        if (frequency > maxFrequencyPerMinute) throw new IpFrequencyException();
+        if (frequency > maxFrequencyPerMinute) {
+            String logMessage = "ip:" + ip;
+            String token = request.getHeader("token");
+            Integer id = TokenUtil.getId(token);
+            if (id != null) logMessage += "--id:" + id;
+            log.error(logMessage);
+            throw new IpFrequencyException();
+        }
         return true;
-    }
-    
-    private void checkFrequency(String ip) {
-    
     }
 }

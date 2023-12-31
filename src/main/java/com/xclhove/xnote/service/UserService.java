@@ -47,4 +47,20 @@ public interface UserService extends IService<User> {
      * @return 是否禁封成功
      */
     boolean banById(Integer userId);
+    
+    /**
+     * 发送验证码
+     *
+     * @param email 邮箱
+     */
+    void sendVerificationCode(String email);
+    
+    /**
+     * 校验验证码
+     *
+     * @param email 邮箱
+     * @param verificationCode 验证码
+     * @return 是否验证成功
+     */
+    boolean verifyVerificationCode(String email, String verificationCode);
 }

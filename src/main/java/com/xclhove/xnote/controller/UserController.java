@@ -3,9 +3,12 @@ package com.xclhove.xnote.controller;
 import cn.hutool.core.bean.BeanUtil;
 import com.xclhove.xnote.annotations.AdminJwtIntercept;
 import com.xclhove.xnote.annotations.UserJwtIntercept;
+import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.entity.dto.UserDTO;
 import com.xclhove.xnote.entity.table.User;
+import com.xclhove.xnote.exception.UserServiceException;
 import com.xclhove.xnote.service.UserService;
+import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.Result;
 import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.Pattern;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xclhove
@@ -29,6 +33,7 @@ import javax.validation.constraints.Pattern;
 @Validated
 public class UserController {
     private final UserService userService;
+    private final RedisTool redisTool;
     
     @GetMapping("/{userId}")
     @ApiOperation(value = "查询用户信息")
@@ -44,11 +49,11 @@ public class UserController {
     @ApiOperation(value = "用户登录")
     public Result<String> login(@RequestParam
                                 @ApiParam(value = "账号", example = "user123456")
-                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、’_‘、‘.’和‘*’！")
+                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、‘_’、‘.’和‘*’！")
                                 String account,
                                 @RequestParam
                                 @ApiParam(value = "密码", example = "123456")
-                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、’_‘、‘.’和‘*’！")
+                                @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、‘_’、‘.’和‘*’！")
                                 String password) {
         String token = userService.login(account, password);
         return Result.success(token);
@@ -68,6 +73,8 @@ public class UserController {
     public Result<Object> register(@RequestBody
                                    @ApiParam(value = "用户信息")
                                    UserDTO userDTO) {
+        boolean verifiedPassed = userService.verifyVerificationCode(userDTO.getEmail(), userDTO.getVerificationCode());
+        if (!verifiedPassed) throw new UserServiceException("验证码错误！");
         User user = BeanUtil.copyProperties(userDTO, User.class);
         userService.register(user);
         return Result.success();
@@ -96,5 +103,24 @@ public class UserController {
                             Integer userId) {
         userService.banById(userId);
         return Result.success();
+    }
+    
+    @GetMapping("/verificationCode")
+    @ApiOperation("发送验证码")
+    public Result<Object> sendVerificationCode(HttpServletRequest request,
+                                               @RequestParam
+                                               @ApiParam(value = "邮箱")
+                                               String email) {
+        String ip = request.getRemoteAddr();
+        String redisKey = RedisKey.VERIFICATION_CODE_IP_LIMIT + ip;
+        Integer value = redisTool.getValue(redisKey, Integer.class);
+        
+        final int maxFrequencyPerMinute = 2;
+        int frequency = (value == null) ? 0 : value;
+        if (frequency >= maxFrequencyPerMinute) throw new UserServiceException("操作过于频繁！");
+        
+        userService.sendVerificationCode(email);
+        redisTool.setValue(redisKey, ++frequency, 1, TimeUnit.MINUTES);
+        return Result.success("验证码发送成功！", null);
     }
 }

@@ -35,4 +35,7 @@ public class UserDTO {
     
     @ApiModelProperty(value = "用户状态", example = "正常")
     private UserStatus status;
+    
+    @ApiModelProperty(value = "验证码")
+    private String verificationCode;
 }

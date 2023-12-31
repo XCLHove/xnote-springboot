@@ -10,19 +10,28 @@ import com.xclhove.xnote.exception.UserServiceException;
 import com.xclhove.xnote.exception.UserTokenException;
 import com.xclhove.xnote.mapper.UserMapper;
 import com.xclhove.xnote.service.UserService;
+import com.xclhove.xnote.tool.EmailTool;
+import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.EncryptUtil;
 import com.xclhove.xnote.util.TokenUtil;
+import com.xclhove.xnote.util.VerificationCodeUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author xclhove
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
-    private final String regex = "^[\\w\\.\\*]{6,30}$";
+    private final String regex = "^[\\w\\.\\*_]{5,30}$";
+    private final EmailTool emailTool;
+    private final RedisTool redisTool;
     
     @Override
     public boolean register(User user) {
@@ -46,8 +55,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     
     @Override
     public String login(String account, String password) {
-        if (!account.matches(regex)) throw new UserServiceException("账号格式不正确！");
-        if (!password.matches(regex)) throw new UserServiceException("密码格式不正确！");
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getAccount, account);
         if (this.getOne(queryWrapper) == null) throw new UserServiceException("账号不存在！");
@@ -108,4 +115,34 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         return true;
     }
     
+    @Override
+    public void sendVerificationCode(String email) {
+        int expirationDate = 1;
+        String verificationCode = VerificationCodeUtil.generateVerificationCode(4);
+        String generateVerificationCodeKey = VerificationCodeUtil.generateVerificationCodeKey(email);
+        redisTool.setValue(generateVerificationCodeKey, verificationCode, expirationDate, TimeUnit.MINUTES);
+        
+        String subject = "XNote验证码";
+        String content = "XNote验证码：" + verificationCode + " ，有效期：" + expirationDate + "分钟。";
+        try {
+            emailTool.sendMail(email, subject, content);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new UserServiceException("验证码发送失败！");
+        }
+    }
+    
+    @Override
+    public boolean verifyVerificationCode(String email, String verificationCode) {
+        String verificationCodeKey = VerificationCodeUtil.generateVerificationCodeKey(email);
+        String code = redisTool.getValue(verificationCodeKey, String.class);
+        if (code == null) {
+            return false;
+        }
+        if (!code.equalsIgnoreCase(verificationCode)) {
+            return false;
+        }
+        redisTool.deleteValue(verificationCodeKey);
+        return true;
+    }
 }

@@ -1,9 +1,12 @@
 package com.xclhove.xnote.Interceptor;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.xclhove.xnote.constant.RedisKey;
+import com.xclhove.xnote.constant.RequestHeaderKey;
 import com.xclhove.xnote.exception.IpFrequencyException;
+import com.xclhove.xnote.tool.RedisTool;
+import com.xclhove.xnote.util.RequestUtil;
 import com.xclhove.xnote.util.TokenUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -16,7 +19,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * ip拦截器
@@ -25,18 +27,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class IPInterceptor extends ServiceInterceptor {
+    private final RedisTool redisTool;
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface UnlockIpFrequencyLimit {
     }
     
-    private final Cache<String, AtomicInteger> ipCache = CacheBuilder.newBuilder()
-            //写入过期时间为1分钟
-            .expireAfterWrite(1, TimeUnit.MINUTES)
-            //缓存最大数为300
-            .maximumSize(300)
-            .build();
     /** 单个ip每分钟最大请求次数 */
     @Value("${xnote.ip.max-frequency-per-minute}")
     private int maxFrequencyPerMinute;
@@ -53,18 +51,19 @@ public class IPInterceptor extends ServiceInterceptor {
         UnlockIpFrequencyLimit unlockIpFrequencyLimit = handlerMethod.getMethod().getAnnotation(UnlockIpFrequencyLimit.class);
         if (null != unlockIpFrequencyLimit) return true;
         
-        String ip = request.getRemoteAddr();
+        String ip = RequestUtil.getIpAddr(request);
         int frequency = 0;
         
-        try {
-            frequency = ipCache.get(ip, () -> new AtomicInteger(0)).intValue();
-            ipCache.put(ip, new AtomicInteger(++frequency));
-        } catch (Exception e) {
-            throw new IpFrequencyException("IP访问频率校验失败！");
+        Integer value = redisTool.getValue(RedisKey.IP_FREQUENCY + ip, Integer.class);
+        frequency = (value == null || value < 0) ? 0 : value;
+        
+        redisTool.setValue(RedisKey.IP_FREQUENCY + ip, frequency + 1, 1, TimeUnit.MINUTES);
+        
+        if (frequency > (maxFrequencyPerMinute + promptNumber)) {
+            return false;
         }
-        if (frequency > (maxFrequencyPerMinute + promptNumber)) return false;
         if (frequency > maxFrequencyPerMinute) {
-            String logMessage = "ip:" + ip;
+            String logMessage = "ip_limit:" + ip;
             String token = request.getHeader("token");
             Integer id = TokenUtil.getId(token);
             if (id != null) logMessage += "--id:" + id;

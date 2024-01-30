@@ -11,6 +11,7 @@
 3. Springboot
 4. MySQL
 5. MinIO
+6. Redis
 
 ## git仓库
 - 前端：[xnote-vue(github)](https://github.com/XCLHove/xnote-vue) | [xnote-vue(gitee)](https://gitee.com/xclhove/xnote-vue)

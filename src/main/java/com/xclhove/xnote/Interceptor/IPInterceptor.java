@@ -2,7 +2,6 @@ package com.xclhove.xnote.Interceptor;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.xclhove.xnote.annotations.UnlockIpFrequencyLimit;
 import com.xclhove.xnote.exception.IpFrequencyException;
 import com.xclhove.xnote.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +11,10 @@ import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -23,6 +26,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @Component
 public class IPInterceptor extends ServiceInterceptor {
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface UnlockIpFrequencyLimit {
+    }
+    
     private final Cache<String, AtomicInteger> ipCache = CacheBuilder.newBuilder()
             //写入过期时间为1分钟
             .expireAfterWrite(1, TimeUnit.MINUTES)

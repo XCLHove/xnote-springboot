@@ -2,7 +2,6 @@ package com.xclhove.xnote.Interceptor;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
-import com.xclhove.xnote.annotations.AdminJwtIntercept;
 import com.xclhove.xnote.entity.table.Admin;
 import com.xclhove.xnote.exception.AdminTokenException;
 import com.xclhove.xnote.exception.ServiceException;
@@ -15,6 +14,10 @@ import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author xclhove
@@ -23,6 +26,10 @@ import javax.servlet.http.HttpServletResponse;
 @Component
 @RequiredArgsConstructor
 public class AdminJwtInterceptor extends ServiceInterceptor {
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface AdminJwtIntercept {
+    }
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {

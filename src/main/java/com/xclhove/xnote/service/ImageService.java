@@ -1,8 +1,8 @@
 package com.xclhove.xnote.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
 import com.xclhove.xnote.entity.dto.ImagePageDTO;
 import com.xclhove.xnote.entity.table.Image;
-import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
@@ -84,4 +84,11 @@ public interface ImageService extends IService<Image> {
      * @param imageName 图片名称
      */
     void downloadByName(HttpServletResponse response, String imageName);
+    
+    /**
+     * 下载图片
+     * @param response 响应对象
+     * @param image 图片信息
+     */
+    void download(HttpServletResponse response, Image image);
 }

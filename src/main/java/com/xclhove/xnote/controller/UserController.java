@@ -1,12 +1,15 @@
 package com.xclhove.xnote.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import com.xclhove.xnote.annotations.AdminJwtIntercept;
-import com.xclhove.xnote.annotations.UserJwtIntercept;
+import com.xclhove.xnote.Interceptor.AdminJwtInterceptor;
+import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
 import com.xclhove.xnote.constant.RedisKey;
+import com.xclhove.xnote.constant.RequestHeaderKey;
+import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.dto.UserDTO;
 import com.xclhove.xnote.entity.table.User;
-import com.xclhove.xnote.exception.UserServiceException;
+import com.xclhove.xnote.exception.OperationFrequencyException;
+import com.xclhove.xnote.exception.VerificationCodeException;
 import com.xclhove.xnote.service.UserService;
 import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.Result;
@@ -56,14 +59,29 @@ public class UserController {
                                 @Pattern(regexp = "^[a-zA-Z0-9_.*]{5,30}$", message = "账号仅支持5到30位的数字、字母、‘_’、‘.’和‘*’！")
                                 String password) {
         String token = userService.login(account, password);
-        return Result.success(token);
+        return Result.success("登录成功！", token);
+    }
+    
+    @PostMapping("/logout")
+    @UserJwtInterceptor.UserJwtIntercept
+    @ApiOperation(value = "用户登出")
+    public Result<Object> logout(@RequestHeader(value = RequestHeaderKey.TOKEN) String token) {
+        Integer userId = TokenUtil.getId(token);
+        userService.logout(userId);
+        return Result.success("登出成功！", null);
+    }
+    
+    @PostMapping("/login")
+    @ApiOperation(value = "用户登录")
+    public Result<String> login(@RequestBody UserDTO userDTO) {
+        return this.login(userDTO.getAccount(), userDTO.getPassword());
     }
     
     @GetMapping("/self")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     @ApiOperation(value = "查询用户自己的信息")
     public Result<User> querySelfInfo() {
-        Integer userId = (Integer) ThreadLocalUtil.get("id");
+        Integer userId = ThreadLocalUtil.get(TreadLocalKey.ID, Integer.class);
         User user = userService.queryById(userId);
         return Result.success(user);
     }
@@ -74,20 +92,20 @@ public class UserController {
                                    @ApiParam(value = "用户信息")
                                    UserDTO userDTO) {
         boolean verifiedPassed = userService.verifyVerificationCode(userDTO.getEmail(), userDTO.getVerificationCode());
-        if (!verifiedPassed) throw new UserServiceException("验证码错误！");
+        if (!verifiedPassed) throw new VerificationCodeException("验证码错误！");
         User user = BeanUtil.copyProperties(userDTO, User.class);
         userService.register(user);
-        return Result.success();
+        return Result.success("注册成功！", null);
     }
     
     @PostMapping
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     @ApiOperation(value = "更新用户信息")
     public Result<User> update(HttpServletRequest request,
                                @RequestBody
                                @ApiParam(value = "用户信息")
                                UserDTO userDTO) {
-        String token = request.getHeader("token");
+        String token = request.getHeader(RequestHeaderKey.TOKEN);
         Integer userId = TokenUtil.getId(token);
         User user = BeanUtil.copyProperties(userDTO, User.class);
         user.setId(userId);
@@ -96,7 +114,7 @@ public class UserController {
     }
     
     @PostMapping("/ban/{userId}")
-    @AdminJwtIntercept
+    @AdminJwtInterceptor.AdminJwtIntercept
     @ApiOperation("禁封用户")
     public Result<User> ban(@PathVariable
                             @ApiParam(value = "用户id", example = "1")
@@ -117,7 +135,7 @@ public class UserController {
         
         final int maxFrequencyPerMinute = 2;
         int frequency = (value == null) ? 0 : value;
-        if (frequency >= maxFrequencyPerMinute) throw new UserServiceException("操作过于频繁！");
+        if (frequency >= maxFrequencyPerMinute) throw new OperationFrequencyException();
         
         userService.sendVerificationCode(email);
         redisTool.setValue(redisKey, ++frequency, 1, TimeUnit.MINUTES);

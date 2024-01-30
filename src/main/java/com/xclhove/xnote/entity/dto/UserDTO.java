@@ -8,6 +8,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Email;
+
 /**
  * @author xclhove
  */
@@ -31,6 +33,7 @@ public class UserDTO {
     private String password;
     
     @ApiModelProperty(value = "邮箱", example = "123@example.com")
+    @Email(message = "邮箱格式不正确！")
     private String email;
     
     @ApiModelProperty(value = "用户状态", example = "正常")

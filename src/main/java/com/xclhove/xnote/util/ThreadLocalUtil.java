@@ -23,6 +23,18 @@ public class ThreadLocalUtil {
     }
     
     /**
+     * 获取数据
+     * @param name 数据名
+     * @param resultType 数据值返回类型
+     * @return 数据值
+     * @param <T>
+     */
+    public static <T> T get(String name, Class<T> resultType) {
+        Map<String, Object> dataMap = THREAD_LOCAL.get();
+        return (T) dataMap.get(name);
+    }
+    
+    /**
      * 存入数据
      * @param name 数据名
      * @param value 数据值

@@ -4,19 +4,23 @@ import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
 import com.xclhove.xnote.exception.UserServiceException;
 import com.xclhove.xnote.exception.UserTokenException;
+import com.xclhove.xnote.exception.VerificationCodeException;
 import com.xclhove.xnote.mapper.UserMapper;
 import com.xclhove.xnote.service.UserService;
 import com.xclhove.xnote.tool.EmailTool;
 import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.EncryptUtil;
+import com.xclhove.xnote.util.ExceptionUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import com.xclhove.xnote.util.VerificationCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +36,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final String regex = "^[\\w\\.\\*_]{5,30}$";
     private final EmailTool emailTool;
     private final RedisTool redisTool;
+    @Value("${xnote.debug.enable: false}")
+    private boolean isDebug;
     
     @Override
     public boolean register(User user) {
@@ -57,13 +63,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public String login(String account, String password) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(User::getAccount, account);
-        if (this.getOne(queryWrapper) == null) throw new UserServiceException("账号不存在！");
+        User user = this.getOne(queryWrapper);
+        if (user == null) {
+            throw new UserServiceException("账号不存在！");
+        }
         String encryptPassword = EncryptUtil.encrypt(password, account, EncryptUtil.EncryptionAlgorithm.SHA256);
         queryWrapper.eq(User::getPassword, encryptPassword);
-        User user = this.getOne(queryWrapper);
-        if (user == null) throw new UserServiceException("密码错误！");
-        String token = TokenUtil.generate(user.getId(), user.getPassword());
+        user = this.getOne(queryWrapper);
+        if (user == null) {
+            throw new UserServiceException("密码错误！");
+        }
+        String token = redisTool.getValue(RedisKey.USER_TOKEN + user.getId(), String.class);
+        if (StrUtil.isNotBlank(token)) {
+            return token;
+        }
+        token = TokenUtil.generate(user.getId(), user.getPassword());
+        redisTool.setValue(RedisKey.USER_TOKEN + user.getId(), token, 24, TimeUnit.HOURS);
         return token;
+    }
+    
+    @Override
+    public void logout(Integer userId) {
+        redisTool.deleteValue(RedisKey.USER_TOKEN + userId);
+        String token = redisTool.getValue(RedisKey.USER_TOKEN + userId, String.class);
+        if (StrUtil.isNotBlank(token)) {
+            throw new UserServiceException("注销失败！");
+        }
     }
     
     @Override
@@ -117,6 +142,13 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     
     @Override
     public void sendVerificationCode(String email) {
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getEmail, email);
+        User user = this.getOne(queryWrapper);
+        if (user != null) {
+            throw new VerificationCodeException("该邮箱已被注册！");
+        }
+        
         int expirationDate = 1;
         String verificationCode = VerificationCodeUtil.generateVerificationCode(4);
         String generateVerificationCodeKey = VerificationCodeUtil.generateVerificationCodeKey(email);
@@ -127,13 +159,15 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         try {
             emailTool.sendMail(email, subject, content);
         } catch (Exception e) {
-            log.error(e.getMessage());
-            throw new UserServiceException("验证码发送失败！");
+            log.error(ExceptionUtil.getMessage(e));
+            throw new VerificationCodeException("验证码发送失败！");
         }
     }
     
     @Override
     public boolean verifyVerificationCode(String email, String verificationCode) {
+        if (isDebug) return true;
+        if (StrUtil.isBlank(verificationCode)) return false;
         String verificationCodeKey = VerificationCodeUtil.generateVerificationCodeKey(email);
         String code = redisTool.getValue(verificationCodeKey, String.class);
         if (code == null) {

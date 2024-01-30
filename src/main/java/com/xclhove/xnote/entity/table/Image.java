@@ -1,15 +1,13 @@
 package com.xclhove.xnote.entity.table;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.time.LocalDateTime;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.experimental.Accessors;
+
+import java.sql.Timestamp;
 
 /**
  * <p>
@@ -38,5 +36,5 @@ public class Image {
     private String name;
 
     @ApiModelProperty(value = "上一次下载的时间")
-    private LocalDateTime lastDownloadTime;
+    private Timestamp lastDownloadTime;
 }

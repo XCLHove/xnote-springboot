@@ -1,7 +1,7 @@
 package com.xclhove.xnote.mapper;
 
-import com.xclhove.xnote.entity.table.Image;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xclhove.xnote.entity.table.Image;
 import org.apache.ibatis.annotations.Mapper;
 
 /**

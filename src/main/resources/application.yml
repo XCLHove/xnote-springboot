@@ -65,11 +65,15 @@ spring.thymeleaf.check-template-location: false
 spring.jackson.default-property-inclusion: NON_EMPTY
 
 xnote:
+  keywords:
+    convert-enable: false #关键字转化
   ip:
    max-frequency-per-minute: 120 #单个ip每分钟最大请求次数
   image:
-    allow-type: ^image/(png|jpg|jpeg|svg|ico|gif|bmp)+$
+    allow-type: ^image/(png|jpg|jpeg|svg|ico|gif|bmp)+$ #允许上传的图片类型
     allow-size: 10485760 #10MB
+  page-request:
+    max-page-size: 100 #分页请求每页最大数量
 ---
 #应用服务WEB访问端口
 server.port: 8080
@@ -81,7 +85,7 @@ spring:
   #数据库配置
   datasource:
     #MysqlUrl格式: jdbc:mysql://IP:Port/DataBaseName?parameter=value
-    url: jdbc:mysql://localhost:3306/${database.name}
+    url: jdbc:mysql://localhost:3306/${database.name}?rewriteBatchedStatements=true
     #数据库用户名
     username: root
     #数据库密码
@@ -90,7 +94,7 @@ spring:
     host: localhost
     port: 6379
     password: 123456
-    database: 1
+    database: 0
   mail:
     host: smtp.qq.com
     port: 587
@@ -109,3 +113,5 @@ minio:
   bucketName: xnote #存储桶名称
   accessKey: admin #访问的key
   secretKey: 12345678 #访问的秘钥
+
+#xnote.debug.enable: true

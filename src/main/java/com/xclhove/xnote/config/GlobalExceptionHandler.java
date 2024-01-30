@@ -2,8 +2,8 @@ package com.xclhove.xnote.config;
 
 import cn.hutool.core.util.StrUtil;
 import com.xclhove.xnote.enums.result.ResultType;
+import com.xclhove.xnote.exception.ParameterValidateException;
 import com.xclhove.xnote.exception.ServiceException;
-import com.xclhove.xnote.exception.ValidateException;
 import com.xclhove.xnote.util.Result;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseBody
     public Result<String> constraintViolationHandle(HttpServletResponse response, ConstraintViolationException exception) {
-        String message = StrUtil.isNotBlank(exception.getMessage()) ? exception.getMessage() : ResultType.VALIDATE_EXCEPTION.getMessage();
-        return serviceHandle(response, new ValidateException(message));
+        String message = StrUtil.isNotBlank(exception.getMessage()) ? exception.getMessage() : ResultType.PARAMETER_VALIDATE_EXCEPTION.getMessage();
+        return serviceHandle(response, new ParameterValidateException(message));
     }
 }

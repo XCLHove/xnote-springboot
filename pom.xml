@@ -5,7 +5,7 @@
 >
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.xclhove</groupId>
-    <artifactId>xnote</artifactId>
+    <artifactId>xnote-springboot</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>xnote</name>
     <description>xnote</description>

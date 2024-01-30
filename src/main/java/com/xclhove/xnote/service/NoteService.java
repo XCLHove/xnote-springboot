@@ -10,10 +10,12 @@ import com.xclhove.xnote.entity.table.Note;
 public interface NoteService extends IService<Note> {
     /**
      * 获取笔记
+     * @param userId 用户id
      * @param noteId 笔记id
+     * @param accessCode 访问码
      * @return Note对象
      */
-    Note getNoteById(Integer noteId);
+    Note getNoteById(Integer userId, Integer noteId, String accessCode);
     
     /**
      * 添加笔记
@@ -40,7 +42,17 @@ public interface NoteService extends IService<Note> {
     /**
      * 分页获取所有的笔记
      * @param notePageDTO 分页数据传输对象
+     * @param requestUserId 请求用户的id，为null则未登录
+     * @param isGetSelf 是否获取自己的笔记
      * @return Note对象列表（不包含笔记内容）
      */
-    NotePageDTO pageNote(NotePageDTO notePageDTO);
+    NotePageDTO pageNote(NotePageDTO notePageDTO, Integer requestUserId, boolean isGetSelf);
+    
+    /**
+     * 分页获取所有的笔记
+     * @param notePageDTO 分页数据传输对象
+     * @param requestUserId 请求用户的id，为null则未登录
+     * @return Note对象列表（不包含笔记内容）
+     */
+    NotePageDTO pageNote(NotePageDTO notePageDTO, Integer requestUserId);
 }

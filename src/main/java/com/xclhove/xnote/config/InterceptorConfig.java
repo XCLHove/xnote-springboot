@@ -3,6 +3,7 @@ package com.xclhove.xnote.config;
 import com.xclhove.xnote.Interceptor.AdminJwtInterceptor;
 import com.xclhove.xnote.Interceptor.IPInterceptor;
 import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
+import com.xclhove.xnote.Interceptor.validator.UserJwtValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -19,11 +20,13 @@ public class InterceptorConfig implements WebMvcConfigurer {
     private final UserJwtInterceptor userJwtInterceptor;
     private final AdminJwtInterceptor adminJwtInterceptor;
     private final IPInterceptor ipInterceptor;
+    private final UserJwtValidator userJwtValidator;
     
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(ipInterceptor);
         registry.addInterceptor(userJwtInterceptor);
         registry.addInterceptor(adminJwtInterceptor);
+        registry.addInterceptor(userJwtValidator);
     }
 }

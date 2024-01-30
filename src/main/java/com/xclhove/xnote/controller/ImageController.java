@@ -1,6 +1,6 @@
 package com.xclhove.xnote.controller;
 
-import com.xclhove.xnote.annotations.UserJwtIntercept;
+import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
 import com.xclhove.xnote.entity.dto.ImagePageDTO;
 import com.xclhove.xnote.entity.dto.ObjectList;
 import com.xclhove.xnote.entity.table.Image;
@@ -45,7 +45,7 @@ public class ImageController {
     
     @PutMapping
     @ApiOperation(value = "上传图片")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     public Result<Image> upload(MultipartFile uploadImage) {
         Integer id = (Integer) ThreadLocalUtil.get("id");
         Image image = imageService.upload(id, uploadImage);
@@ -54,7 +54,7 @@ public class ImageController {
     
     @PostMapping("/deleteByIds")
     @ApiOperation(value = "通过id删除图片")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     public Result<Image> deleteByIds(@RequestBody ObjectList<Integer> ids) {
         Integer userId = (Integer) ThreadLocalUtil.get("id");
         imageService.deleteByIds(userId, ids.getValue());
@@ -63,7 +63,7 @@ public class ImageController {
     
     @PostMapping
     @ApiOperation(value = "修改图片")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     public Result<Object> change(@RequestBody Image image) {
         Integer userId = (Integer) ThreadLocalUtil.get("id");
         image.setUserId(userId);
@@ -73,7 +73,7 @@ public class ImageController {
     
     @GetMapping("/{imageId}")
     @ApiOperation(value = "获取图片信息")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     public Result<Image> get(@PathVariable
                              @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
                              Integer imageId) {
@@ -84,7 +84,7 @@ public class ImageController {
     
     @PostMapping("/page")
     @ApiOperation(value = "分页获取图片")
-    @UserJwtIntercept
+    @UserJwtInterceptor.UserJwtIntercept
     public Result<ImagePageDTO> page(@RequestBody ImagePageDTO pageDTO) {
         Integer userId = (Integer) ThreadLocalUtil.get("id");
         pageDTO.setUserId(userId);

@@ -1,14 +1,13 @@
-package com.xclhove.xnote.Interceptor;
+package com.xclhove.xnote.Interceptor.validator;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
+import com.xclhove.xnote.Interceptor.ServiceInterceptor;
 import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.constant.RequestHeaderKey;
 import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
-import com.xclhove.xnote.exception.ServiceException;
-import com.xclhove.xnote.exception.UserTokenException;
 import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
@@ -30,10 +29,10 @@ import java.lang.annotation.Target;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class UserJwtInterceptor extends ServiceInterceptor {
+public class UserJwtValidator extends ServiceInterceptor {
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
-    public @interface UserJwtIntercept {
+    public @interface UserJwtValidate {
     }
     
     private final RedisTool redisTool;
@@ -46,7 +45,7 @@ public class UserJwtInterceptor extends ServiceInterceptor {
             }
             
             HandlerMethod handlerMethod = (HandlerMethod) handler;
-            UserJwtIntercept loginIntercept = handlerMethod.getMethod().getAnnotation(UserJwtIntercept.class);
+            UserJwtValidate loginIntercept = handlerMethod.getMethod().getAnnotation(UserJwtValidate.class);
             //如果要访问的方法上没有加这个注解，那么就说明这个方法不需要拦截，否则就需要进行拦截
             if(null == loginIntercept) {
                 return true;
@@ -54,30 +53,32 @@ public class UserJwtInterceptor extends ServiceInterceptor {
             
             String token = request.getHeader(RequestHeaderKey.TOKEN);
             if (StrUtil.isBlank(token)) {
-                throw new UserTokenException("未登录！");
+                ThreadLocalUtil.set(TreadLocalKey.ID, null);
+                return true;
             }
             Integer id = TokenUtil.getId(token);
             User user = Db.getById(id, User.class);
             if (user.getStatus() == UserStatus.BANED) {
-                throw new UserTokenException("用户已被禁封！");
+                ThreadLocalUtil.set(TreadLocalKey.ID, null);
+                return true;
             }
             String tokenInRedis = redisTool.getValue(RedisKey.USER_TOKEN + id, String.class);
             if ((StrUtil.isBlank(tokenInRedis)) || (!token.equals(tokenInRedis))) {
-                throw new UserTokenException("登录过期，请重新登录！");
+                ThreadLocalUtil.set(TreadLocalKey.ID, null);
+                return true;
             }
             String password = user.getPassword();
             //校验token
             if (!TokenUtil.validate(token, password)) {
-                throw new UserTokenException("token校验未通过！");
+                ThreadLocalUtil.set(TreadLocalKey.ID, null);
+                return true;
             }
             ThreadLocalUtil.set(TreadLocalKey.ID, id);
             return true;
-        } catch (ServiceException serviceException) {
-            throw serviceException;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
-            throw new UserTokenException("出现异常，token校验未通过！");
+            ThreadLocalUtil.set(TreadLocalKey.ID, null);
+            return true;
         }
     }
 }

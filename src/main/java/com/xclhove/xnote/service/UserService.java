@@ -25,6 +25,13 @@ public interface UserService extends IService<User> {
     String login(String account, String password);
     
     /**
+     * 用户注销
+     *
+     * @param userId 用户id
+     */
+    void logout(Integer userId);
+    
+    /**
      * 用户修改信息
      *
      * @param user User对象

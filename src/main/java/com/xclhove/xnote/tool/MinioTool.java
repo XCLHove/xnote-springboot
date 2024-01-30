@@ -32,6 +32,7 @@ public class MinioTool {
     /**
      * 查看存储bucket是否存在
      *
+     * @param bucketName 存储bucket名称
      * @return 是否存在
      */
     public boolean bucketExist(String bucketName) throws Exception {
@@ -41,8 +42,18 @@ public class MinioTool {
     }
     
     /**
+     * 查看存储bucket是否存在
+     *
+     * @return 是否存在
+     */
+    public boolean bucketExist() throws Exception {
+        return bucketExist(minioConfig.getBucketName());
+    }
+    
+    /**
      * 创建存储bucket
      *
+     * @param bucketName 存储bucket名称
      * @return Boolean
      */
     public boolean creatBucket(String bucketName) throws Exception {
@@ -52,6 +63,15 @@ public class MinioTool {
                 .build());
         return bucketExist(bucketName);
         
+    }
+    
+    /**
+     * 创建存储bucket
+     *
+     * @return Boolean
+     */
+    public boolean creatBucket() throws Exception {
+        return creatBucket(minioConfig.getBucketName());
     }
     
     /**
@@ -73,14 +93,15 @@ public class MinioTool {
      * @return 文件名
      */
     public String upload(MultipartFile file) throws Exception {
-        String bucketName = minioConfig.getBucketName();
-        if (!bucketExist(bucketName)) creatBucket(bucketName);
+        if (!bucketExist()) {
+            creatBucket();
+        }
         String originalFilename = file.getOriginalFilename();
         String fileSuffix = originalFilename.substring(originalFilename.lastIndexOf("."));
         String uuid = UUID.randomUUID().toString();
         String fileNameInBucket = uuid + fileSuffix;
         PutObjectArgs objectArgs = PutObjectArgs.builder()
-                .bucket(bucketName)
+                .bucket(minioConfig.getBucketName())
                 .object(fileNameInBucket)
                 .stream(file.getInputStream(), file.getSize(), -1)
                 .contentType(file.getContentType())

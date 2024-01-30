@@ -18,7 +18,6 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class MinioRunner implements ApplicationRunner {
     private final MinioTool minioTool;
-    private final MinioConfig minioConfig;
     
     @Override
     public void run(ApplicationArguments args) {
@@ -30,13 +29,13 @@ public class MinioRunner implements ApplicationRunner {
      */
     public void checkMinio() {
         try {
-            boolean bucketExist = minioTool.bucketExist(minioConfig.getBucketName());
+            boolean bucketExist = minioTool.bucketExist();
             if (bucketExist) {
                 return;
             }
             
             log.info("minio存储桶未创建，创建存储桶……");
-            bucketExist = minioTool.creatBucket(minioConfig.getBucketName());
+            bucketExist = minioTool.creatBucket();
             
             if (!bucketExist) {
                 log.error("创建存储桶失败！");

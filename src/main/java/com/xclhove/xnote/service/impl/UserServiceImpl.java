@@ -21,7 +21,6 @@ import com.xclhove.xnote.util.VerificationCodeUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -33,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @RequiredArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
-    private final String regex = "^[\\w\\.\\*_]{5,30}$";
+    private final String regex = "^[\\w.*_]{5,30}$";
     private final EmailTool emailTool;
     private final RedisTool redisTool;
     @Value("${xnote.debug.enable: false}")
@@ -42,20 +41,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public boolean register(User user) {
         boolean saveSuccess = false;
-        try {
-            String account = user.getAccount();
-            String password = user.getPassword();
-            if (!account.matches(regex)) throw new UserServiceException("账号格式不正确！");
-            if (!password.matches(regex)) throw new UserServiceException("密码格式不正确！");
-            String encryptedPassword = EncryptUtil.encrypt(password, account, EncryptUtil.EncryptionAlgorithm.SHA256);
-            user.setPassword(encryptedPassword);
-            saveSuccess = this.save(user);
-        } catch (DuplicateKeyException duplicateKeyException) {
+        String account = user.getAccount();
+        String password = user.getPassword();
+        if (!account.matches(regex)) throw new UserServiceException("账号格式不正确！");
+        if (!password.matches(regex)) throw new UserServiceException("密码格式不正确！");
+        
+        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(User::getAccount, account);
+        User user2 = this.getOne(queryWrapper);
+        if (user2 != null) {
             throw new UserServiceException("账号已存在！");
         }
+        
+        String encryptedPassword = EncryptUtil.encrypt(password, account, EncryptUtil.EncryptionAlgorithm.SHA256);
+        user.setPassword(encryptedPassword);
+        try {
+            saveSuccess = this.save(user);
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getMessage(e));
+            throw new UserServiceException("出现异常，注册失败！");
+        }
         if (!saveSuccess) throw new UserServiceException("注册失败，请重新注册!");
-        LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(User::getAccount, user.getAccount());
         return true;
     }
     

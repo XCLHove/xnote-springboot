@@ -4,6 +4,7 @@ import cn.hutool.core.io.FastByteArrayOutputStream;
 import cn.hutool.core.lang.UUID;
 import com.xclhove.xnote.config.MinioConfig;
 import io.minio.*;
+import io.minio.errors.ErrorResponseException;
 import io.minio.http.Method;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
@@ -218,15 +219,21 @@ public class MinioTool {
      * @return 文件对象
      */
     public StatObjectResponse getFile(String fileName) throws Exception {
-        
-        StatObjectResponse file = minioClient.statObject(
-                StatObjectArgs
-                        .builder()
-                        .bucket(minioConfig.getBucketName()).object(fileName)
-                        .build()
-        );
-        return file;
-        
+        try {
+            StatObjectResponse file = minioClient.statObject(
+                    StatObjectArgs
+                            .builder()
+                            .bucket(minioConfig.getBucketName()).object(fileName)
+                            .build()
+            );
+            
+            return file;
+        } catch (ErrorResponseException e) {
+            if (e.getMessage().contains("Object does not exist")) {
+                return null;
+            }
+            throw e;
+        }
     }
     
     /**

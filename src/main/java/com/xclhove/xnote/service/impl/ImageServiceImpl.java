@@ -24,7 +24,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * <p>
@@ -89,30 +91,38 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
         queryWrapper.eq(userId != null, Image::getUserId, userId)
                 .and(qw -> qw.in(Image::getId, imageIds));
         List<Image> images = this.list(queryWrapper);
-        for (Image image : images) {
-            delete(image);
+        List<Integer> hasDeleteImageIds = new ArrayList<>();
+        try {
+            for (Image image : images) {
+                deleteImageFile(image.getName());
+                hasDeleteImageIds.add(image.getId());
+            }
+        } catch (ImageServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(ExceptionUtil.getMessage(e));
+            throw new ImageServiceException("出现异常，删除图片失败！");
+        } finally {
+            if (hasDeleteImageIds.isEmpty()) return false;
+            
+            LambdaQueryWrapper<Image> deleteWrapper = new LambdaQueryWrapper<>();
+            deleteWrapper.eq(userId != null, Image::getUserId, userId)
+                    .and(qw -> qw.in(Image::getId, hasDeleteImageIds));
+            this.remove(deleteWrapper);
         }
         return true;
     }
     
-    @Override
-    public boolean delete(Image image) {
+    private void deleteImageFile(String imageName) {
         boolean deleteSuccess = false;
-        if (StrUtil.isBlank(image.getName())) throw new ImageServiceException("图片名不能为空！");
+        if (StrUtil.isBlank(imageName)) throw new ImageServiceException("图片名不能为空！");
         try {
-            deleteSuccess = minio.deleteFileByFileName(image.getName());
+            deleteSuccess = minio.deleteFileByFileName(imageName);
         } catch (Exception e) {
             log.error(ExceptionUtil.getMessage(e));
             throw new ImageServiceException("出现异常，删除图片文件失败！");
         }
         if (!deleteSuccess) throw new ImageServiceException("图片删除失败！");
-        try {
-            deleteSuccess = this.removeById(image.getId());
-        } catch (Exception e) {
-            throw new ImageServiceException("出现异常，图片删除失败！");
-        }
-        if (!deleteSuccess) throw new ImageServiceException("图片删除失败！");
-        return true;
     }
     
     @Override
@@ -136,8 +146,10 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
                 .like(pageDTO.getSearchAlias() != null, Image::getAlias, pageDTO.getSearchAlias())
                 .orderByDesc(Image::getLastDownloadTime);
         try {
-            List<Image> images = this.page(page, queryWrapper).getRecords();
+            Page<Image> pageImage = this.page(page, queryWrapper);
+            List<Image> images = pageImage.getRecords();
             pageDTO.setList(images);
+            pageDTO.setTotal((int) pageImage.getTotal());
             return pageDTO;
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -163,13 +175,16 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
     }
     
     @Override
-    public void downloadById(HttpServletResponse response, Integer imageId) {
+    public void downloadById(HttpServletResponse response, Integer userId, Integer imageId) {
         Image image = null;
         try {
             image = this.getById(imageId);
         } catch (Exception e) {
             log.error(ExceptionUtil.getMessage(e));
             throw new ImageServiceException("出现异常，获取图片信息失败！");
+        }
+        if (!Objects.equals(userId, image.getUserId())) {
+            throw new ImageServiceException("您无权下载该图片！");
         }
         download(response, image);
     }
@@ -178,13 +193,19 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
     public void downloadByName(HttpServletResponse response, String imageName) {
         Image image = null;
         try {
+            // 获取图片信息
             LambdaQueryWrapper<Image> queryWrapper = new LambdaQueryWrapper<>();
             queryWrapper.eq(Image::getName, imageName);
             image = this.getOne(queryWrapper);
+            
+            // 更新图片下载时间
+            image.setLastDownloadTime(Timestamp.valueOf(LocalDateTime.now()));
+            this.updateById(image);
         } catch (Exception e) {
             log.error(ExceptionUtil.getMessage(e));
-            throw new ImageServiceException("出现异常，获取图片信息失败！");
+            throw new ImageServiceException("出现异常，获取图片信息或更新图片下载时间失败！");
         }
+        
         download(response, image);
     }
     
@@ -194,15 +215,6 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
             throw new ImageServiceException("图片不存在或已被删除！");
         }
         
-        //更新图片下载时间
-        image.setLastDownloadTime(Timestamp.valueOf(LocalDateTime.now()));
-        try {
-            this.updateById(image);
-        } catch (Exception e) {
-            log.error(ExceptionUtil.getMessage(e));
-            throw new ImageServiceException("更新图片下载时间失败！");
-        }
-        
         byte[] bytes = new byte[0];
         try {
             bytes = minio.downloadFile(image.getName());
@@ -210,12 +222,6 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
             log.error(ExceptionUtil.getMessage(e));
             throw new ImageServiceException("出现异常，获取图片文件失败！");
         }
-        
-        // 设置字符编码
-        response.setCharacterEncoding("utf-8");
-        
-        // 设置强制下载不打开
-        //servletResponse.setContentType("application/force-download");
         
         // 设置文件名称
         String imageFileName = image.getAlias();
@@ -228,9 +234,9 @@ public class ImageServiceImpl extends ServiceImpl<ImageMapper, Image> implements
             throw new ImageServiceException("出现异常，编码图片文件名失败！");
         }
         response.addHeader("Content-Disposition", "attachment;fileName=" + imageFileName);
-        response.addHeader("file-name", imageFileName);
-        response.setHeader("Access-Control-Expose-Headers", "file-name");
         
+        String contentType = "image/" + image.getName().substring(image.getName().lastIndexOf(".") + 1);
+        response.setContentType(contentType);
         // 传输文件
         try {
             ServletOutputStream stream = response.getOutputStream();

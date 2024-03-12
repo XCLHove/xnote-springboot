@@ -1,8 +1,8 @@
 package com.xclhove.xnote.controller;
 
 import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
+import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.dto.ImagePageDTO;
-import com.xclhove.xnote.entity.dto.ObjectList;
 import com.xclhove.xnote.entity.table.Image;
 import com.xclhove.xnote.service.ImageService;
 import com.xclhove.xnote.util.Result;
@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.Pattern;
+import java.util.List;
 
 /**
  * 图片相关接口
@@ -36,11 +37,13 @@ public class ImageController {
     
     @GetMapping("downloadById/{imageId}")
     @ApiOperation(value = "下载图片")
+    @UserJwtInterceptor.UserJwtIntercept()
     public void downloadById(HttpServletResponse response,
                              @PathVariable
                              @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
                              Integer imageId) {
-        imageService.downloadById(response, imageId);
+        Integer userId = (Integer) ThreadLocalUtil.get(TreadLocalKey.ID);
+        imageService.downloadById(response, userId, imageId);
     }
     
     @PutMapping
@@ -55,9 +58,9 @@ public class ImageController {
     @PostMapping("/deleteByIds")
     @ApiOperation(value = "通过id删除图片")
     @UserJwtInterceptor.UserJwtIntercept
-    public Result<Image> deleteByIds(@RequestBody ObjectList<Integer> ids) {
-        Integer userId = (Integer) ThreadLocalUtil.get("id");
-        imageService.deleteByIds(userId, ids.getValue());
+    public Result<Object> deleteByIds(@RequestBody List<Integer> ids) {
+        Integer userId = (Integer) ThreadLocalUtil.get(TreadLocalKey.ID);
+        imageService.deleteByIds(userId, ids);
         return Result.success();
     }
     

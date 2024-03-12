@@ -37,14 +37,6 @@ public interface ImageService extends IService<Image> {
     boolean deleteByIds(Integer userId, List<Integer> imageIds);
     
     /**
-     * 删除图片
-     *
-     * @param image 图片信息
-     * @return 删除成功返回true，否则返回false。
-     */
-    boolean delete(Image image);
-    
-    /**
      * 获取图片信息
      *
      * @param userId  用户id，普通用户删除图片时必须传入，管理员删除图片时无需传入
@@ -73,9 +65,10 @@ public interface ImageService extends IService<Image> {
      * 下载图片
      *
      * @param response 响应对象
+     * @param userId    用户id
      * @param imageId  图片id
      */
-    void downloadById(HttpServletResponse response, Integer imageId);
+    void downloadById(HttpServletResponse response, Integer userId, Integer imageId);
     
     /**
      * 下载图片

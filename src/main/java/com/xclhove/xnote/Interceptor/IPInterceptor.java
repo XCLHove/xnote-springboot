@@ -1,10 +1,11 @@
 package com.xclhove.xnote.Interceptor;
 
 import com.xclhove.xnote.constant.RedisKey;
-import com.xclhove.xnote.constant.RequestHeaderKey;
+import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.exception.IpFrequencyException;
 import com.xclhove.xnote.tool.RedisTool;
 import com.xclhove.xnote.util.RequestUtil;
+import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class IPInterceptor extends ServiceInterceptor {
     private final RedisTool redisTool;
+    @Value("${xnote.debug.enable: false}")
+    private boolean isDebug;
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface UnlockIpFrequencyLimit {
@@ -43,6 +46,11 @@ public class IPInterceptor extends ServiceInterceptor {
     
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        String ip = RequestUtil.getIpAddr(request);
+        ThreadLocalUtil.set(TreadLocalKey.CLIENT_IP, ip);
+        
+        if (isDebug) return true;
+        
         //如果不是映射到方法
         if (!(handler instanceof HandlerMethod)) return true;
         
@@ -51,7 +59,6 @@ public class IPInterceptor extends ServiceInterceptor {
         UnlockIpFrequencyLimit unlockIpFrequencyLimit = handlerMethod.getMethod().getAnnotation(UnlockIpFrequencyLimit.class);
         if (null != unlockIpFrequencyLimit) return true;
         
-        String ip = RequestUtil.getIpAddr(request);
         int frequency = 0;
         
         Integer value = redisTool.getValue(RedisKey.IP_FREQUENCY + ip, Integer.class);

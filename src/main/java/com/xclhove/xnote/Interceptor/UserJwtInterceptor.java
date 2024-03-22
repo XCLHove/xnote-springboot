@@ -2,14 +2,13 @@ package com.xclhove.xnote.Interceptor;
 
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
-import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.constant.RequestHeaderKey;
 import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
 import com.xclhove.xnote.exception.ServiceException;
 import com.xclhove.xnote.exception.UserTokenException;
-import com.xclhove.xnote.tool.RedisTool;
+import com.xclhove.xnote.tool.TokenTool;
 import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +35,7 @@ public class UserJwtInterceptor extends ServiceInterceptor {
     public @interface UserJwtIntercept {
     }
     
-    private final RedisTool redisTool;
+    private final TokenTool tokenTool;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {
@@ -53,23 +52,30 @@ public class UserJwtInterceptor extends ServiceInterceptor {
             }
             
             String token = request.getHeader(RequestHeaderKey.TOKEN);
+            // token为空则未登录
             if (StrUtil.isBlank(token)) {
                 throw new UserTokenException("未登录！");
             }
+            
             Integer id = TokenUtil.getId(token);
             User user = Db.getById(id, User.class);
+            // 检查是否被禁封
             if (user.getStatus() == UserStatus.BANED) {
                 throw new UserTokenException("用户已被禁封！");
             }
-            String tokenInRedis = redisTool.getValue(RedisKey.USER_TOKEN + id, String.class);
-            if ((StrUtil.isBlank(tokenInRedis)) || (!token.equals(tokenInRedis))) {
-                throw new UserTokenException("登录过期，请重新登录！");
-            }
-            String password = user.getPassword();
+            
             //校验token
+            String password = user.getPassword();
             if (!TokenUtil.validate(token, password)) {
                 throw new UserTokenException("token校验未通过！");
             }
+            
+            // 和redis中的token进行对比
+            String tokenInRedis = tokenTool.get(user.getId());
+            if ((StrUtil.isBlank(tokenInRedis)) || (!token.equals(tokenInRedis))) {
+                throw new UserTokenException("登录过期，请重新登录！");
+            }
+            
             ThreadLocalUtil.set(TreadLocalKey.ID, id);
             return true;
         } catch (ServiceException serviceException) {

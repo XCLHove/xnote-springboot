@@ -1,10 +1,12 @@
 package com.xclhove.xnote.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xclhove.xnote.constant.RedisKey;
+import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
 import com.xclhove.xnote.exception.UserServiceException;
@@ -14,10 +16,8 @@ import com.xclhove.xnote.mapper.UserMapper;
 import com.xclhove.xnote.service.UserService;
 import com.xclhove.xnote.tool.EmailTool;
 import com.xclhove.xnote.tool.RedisTool;
-import com.xclhove.xnote.util.EncryptUtil;
-import com.xclhove.xnote.util.ExceptionUtil;
-import com.xclhove.xnote.util.TokenUtil;
-import com.xclhove.xnote.util.VerificationCodeUtil;
+import com.xclhove.xnote.tool.TokenTool;
+import com.xclhove.xnote.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +37,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private final RedisTool redisTool;
     @Value("${xnote.debug.enable: false}")
     private boolean isDebug;
+    private final TokenTool tokenTool;
     
     @Override
     public boolean register(User user) {
@@ -68,30 +69,37 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     @Override
     public String login(String account, String password) {
         LambdaQueryWrapper<User> queryWrapper = new LambdaQueryWrapper<>();
+        // 检查账号是否存在
         queryWrapper.eq(User::getAccount, account);
         User user = this.getOne(queryWrapper);
         if (user == null) {
             throw new UserServiceException("账号不存在！");
         }
+        
+        // 检查密码是否正确
         String encryptPassword = EncryptUtil.encrypt(password, account, EncryptUtil.EncryptionAlgorithm.SHA256);
         queryWrapper.eq(User::getPassword, encryptPassword);
         user = this.getOne(queryWrapper);
         if (user == null) {
             throw new UserServiceException("密码错误！");
         }
-        String token = redisTool.getValue(RedisKey.USER_TOKEN + user.getId(), String.class);
+        
+        // 检查redis中是否已存在token
+        String token = tokenTool.get(user.getId());
         if (StrUtil.isNotBlank(token)) {
             return token;
         }
+        
+        // 生成新token
         token = TokenUtil.generate(user.getId(), user.getPassword());
-        redisTool.setValue(RedisKey.USER_TOKEN + user.getId(), token, 24, TimeUnit.HOURS);
+        tokenTool.set(user.getId(), token);
         return token;
     }
     
     @Override
     public void logout(Integer userId) {
-        redisTool.deleteValue(RedisKey.USER_TOKEN + userId);
-        String token = redisTool.getValue(RedisKey.USER_TOKEN + userId, String.class);
+        tokenTool.remove(userId);
+        String token = tokenTool.get(userId);
         if (StrUtil.isNotBlank(token)) {
             throw new UserServiceException("注销失败！");
         }

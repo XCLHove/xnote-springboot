@@ -3,6 +3,7 @@ package com.xclhove.xnote.controller;
 import cn.hutool.core.bean.BeanUtil;
 import com.xclhove.xnote.Interceptor.AdminJwtInterceptor;
 import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
+import com.xclhove.xnote.Interceptor.validator.UserJwtValidator;
 import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.constant.RequestHeaderKey;
 import com.xclhove.xnote.constant.TreadLocalKey;
@@ -63,11 +64,13 @@ public class UserController {
     }
     
     @PostMapping("/logout")
-    @UserJwtInterceptor.UserJwtIntercept
+    @UserJwtValidator.UserJwtValidate
     @ApiOperation(value = "用户登出")
-    public Result<Object> logout(@RequestHeader(value = RequestHeaderKey.TOKEN) String token) {
+    public Result<Object> logout(@RequestHeader(value = RequestHeaderKey.TOKEN, defaultValue = "") String token) {
         Integer userId = TokenUtil.getId(token);
-        userService.logout(userId);
+        if (userId != null) {
+            userService.logout(userId);
+        }
         return Result.success("登出成功！", null);
     }
     

@@ -3,12 +3,11 @@ package com.xclhove.xnote.Interceptor.validator;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.toolkit.Db;
 import com.xclhove.xnote.Interceptor.ServiceInterceptor;
-import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.constant.RequestHeaderKey;
 import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.entity.table.User;
 import com.xclhove.xnote.enums.entityattribute.UserStatus;
-import com.xclhove.xnote.tool.RedisTool;
+import com.xclhove.xnote.tool.TokenTool;
 import com.xclhove.xnote.util.ThreadLocalUtil;
 import com.xclhove.xnote.util.TokenUtil;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class UserJwtValidator extends ServiceInterceptor {
     public @interface UserJwtValidate {
     }
     
-    private final RedisTool redisTool;
+    private final TokenTool tokenTool;
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
         try {
@@ -62,7 +61,7 @@ public class UserJwtValidator extends ServiceInterceptor {
                 ThreadLocalUtil.set(TreadLocalKey.ID, null);
                 return true;
             }
-            String tokenInRedis = redisTool.getValue(RedisKey.USER_TOKEN + id, String.class);
+            String tokenInRedis = tokenTool.get(user.getId());
             if ((StrUtil.isBlank(tokenInRedis)) || (!token.equals(tokenInRedis))) {
                 ThreadLocalUtil.set(TreadLocalKey.ID, null);
                 return true;

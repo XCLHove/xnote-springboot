@@ -5,4 +5,5 @@ package com.xclhove.xnote.constant;
  */
 public interface TreadLocalKey {
     String ID = "id";
+    String DEVICE_ID = "deviceId";
 }

@@ -15,4 +15,9 @@ import lombok.NoArgsConstructor;
 public abstract class ServiceException extends RuntimeException {
     private int status;
     private String message;
+    private Object data;
+    
+    public ServiceException(int status, String message) {
+        this(status, message, null);
+    }
 }

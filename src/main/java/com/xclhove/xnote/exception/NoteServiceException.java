@@ -13,6 +13,10 @@ public class NoteServiceException extends ServiceException {
     }
     
     public NoteServiceException(String message) {
-        super(ResultType.NOTE_SERVICE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public NoteServiceException(String message, Object data) {
+        super(ResultType.NOTE_SERVICE_EXCEPTION.getStatus(), message, data);
     }
 }

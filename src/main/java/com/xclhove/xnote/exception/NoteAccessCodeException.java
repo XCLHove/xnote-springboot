@@ -13,6 +13,10 @@ public class NoteAccessCodeException extends ServiceException {
     }
     
     public NoteAccessCodeException(String message) {
-        super(ResultType.NOTE_ACCESS_CODE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public NoteAccessCodeException(String message, Object data) {
+        super(ResultType.NOTE_ACCESS_CODE_EXCEPTION.getStatus(), message, data);
     }
 }

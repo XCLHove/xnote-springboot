@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xclhove.xnote.entity.dto.NotePageDTO;
 import com.xclhove.xnote.entity.table.Note;
 import com.xclhove.xnote.enums.entityattribute.NoteIsPublic;
+import com.xclhove.xnote.enums.result.ResultType;
 import com.xclhove.xnote.exception.NoteAccessCodeException;
 import com.xclhove.xnote.exception.NoteServiceException;
 import com.xclhove.xnote.mapper.NoteMapper;
@@ -52,9 +53,18 @@ public class NoteServiceImpl extends ServiceImpl<NoteMapper, Note> implements No
             throw new NoteServiceException("无权访问该笔记！");
         }
         
-        // 笔记是非公开的但有访问码，检验访问码
+        // 笔记是非公开的但有访问码，检验访问码是否为空
+        if (StrUtil.isBlank(accessCode)) {
+            note.setContent(null);
+            note.setAccessCode(null);
+            throw new NoteAccessCodeException("需要访问码！", note);
+        }
+        
+        // 笔记是非公开的但有访问码，检验访问码是否正确
         if (!note.getAccessCode().equals(accessCode)) {
-            throw new NoteAccessCodeException();
+            note.setContent(null);
+            note.setAccessCode(null);
+            throw new NoteAccessCodeException(ResultType.NOTE_ACCESS_CODE_EXCEPTION.getMessage(), note);
         }
         
         return note;

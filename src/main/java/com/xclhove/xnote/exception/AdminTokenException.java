@@ -13,6 +13,10 @@ public class AdminTokenException extends ServiceException {
     }
     
     public AdminTokenException(String message) {
-        super(ResultType.ADMIN_TOKEN_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public AdminTokenException(String message, Object data) {
+        super(ResultType.ADMIN_TOKEN_EXCEPTION.getStatus(), message, data);
     }
 }

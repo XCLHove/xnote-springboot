@@ -13,6 +13,10 @@ public class UserServiceException extends ServiceException {
     }
     
     public UserServiceException(String message) {
-        super(ResultType.USER_TOKEN_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public UserServiceException(String message, Object data) {
+        super(ResultType.USER_SERVICE_EXCEPTION.getStatus(), message, data);
     }
 }

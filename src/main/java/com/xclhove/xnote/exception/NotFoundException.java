@@ -13,6 +13,10 @@ public class NotFoundException extends ServiceException {
     }
     
     public NotFoundException(String message) {
-        super(ResultType.NOT_FOUND_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public NotFoundException(String message, Object data) {
+        super(ResultType.NOT_FOUND_EXCEPTION.getStatus(), message, data);
     }
 }

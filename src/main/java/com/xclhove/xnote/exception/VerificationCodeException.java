@@ -13,6 +13,10 @@ public class VerificationCodeException extends ServiceException {
     }
     
     public VerificationCodeException(String message) {
-        super(ResultType.VERIFICATION_CODE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public VerificationCodeException(String message, Object data) {
+        super(ResultType.VERIFICATION_CODE_EXCEPTION.getStatus(), message, data);
     }
 }

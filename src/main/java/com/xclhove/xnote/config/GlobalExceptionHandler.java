@@ -27,14 +27,14 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(ServiceException.class)
     @ResponseBody
-    public Result<String> serviceHandle(HttpServletResponse response, ServiceException exception) {
+    public Result<Object> serviceHandle(HttpServletResponse response, ServiceException exception) {
         response.setContentType("application/json");
-        return Result.error(exception.getStatus(), exception.getMessage());
+        return Result.error(exception.getStatus(), exception.getMessage(), exception.getData());
     }
     
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseBody
-    public Result<String> constraintViolationHandle(HttpServletResponse response, ConstraintViolationException exception) {
+    public Result<Object> constraintViolationHandle(HttpServletResponse response, ConstraintViolationException exception) {
         String message = StrUtil.isNotBlank(exception.getMessage()) ? exception.getMessage() : ResultType.PARAMETER_VALIDATE_EXCEPTION.getMessage();
         return serviceHandle(response, new ParameterValidateException(message));
     }

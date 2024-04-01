@@ -13,6 +13,10 @@ public class ImageServiceException extends ServiceException {
     }
     
     public ImageServiceException(String message) {
-        super(ResultType.IMAGE_SERVICE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public ImageServiceException(String message, Object data) {
+        super(ResultType.IMAGE_SERVICE_EXCEPTION.getStatus(), message, data);
     }
 }

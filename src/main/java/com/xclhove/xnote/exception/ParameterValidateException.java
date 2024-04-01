@@ -13,6 +13,10 @@ public class ParameterValidateException extends ServiceException {
     }
     
     public ParameterValidateException(String message) {
-        super(ResultType.PARAMETER_VALIDATE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public ParameterValidateException(String message, Object data) {
+        super(ResultType.PARAMETER_VALIDATE_EXCEPTION.getStatus(), message, data);
     }
 }

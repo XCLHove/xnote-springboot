@@ -13,6 +13,10 @@ public class AdminServiceException extends ServiceException {
     }
     
     public AdminServiceException(String message) {
-        super(ResultType.ADMIN_SERVICE_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public AdminServiceException(String message, Object data) {
+        super(ResultType.ADMIN_SERVICE_EXCEPTION.getStatus(), message, data);
     }
 }

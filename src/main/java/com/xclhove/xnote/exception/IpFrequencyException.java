@@ -12,6 +12,10 @@ public class IpFrequencyException extends ServiceException{
     }
     
     public IpFrequencyException(String message) {
-        super(ResultType.IP_FREQUENCY_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public IpFrequencyException(String message, Object data) {
+        super(ResultType.IP_FREQUENCY_EXCEPTION.getStatus(), message, data);
     }
 }

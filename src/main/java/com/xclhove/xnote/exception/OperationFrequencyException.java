@@ -13,6 +13,10 @@ public class OperationFrequencyException extends ServiceException {
     }
     
     public OperationFrequencyException(String message) {
-        super(ResultType.OPERATION_FREQUENCY_EXCEPTION.getStatus(), message);
+        this(message, null);
+    }
+    
+    public OperationFrequencyException(String message, Object data) {
+        super(ResultType.OPERATION_FREQUENCY_EXCEPTION.getStatus(), message, data);
     }
 }

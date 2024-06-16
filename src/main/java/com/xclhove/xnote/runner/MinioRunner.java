@@ -1,12 +1,12 @@
 package com.xclhove.xnote.runner;
 
-import com.xclhove.xnote.config.MinioConfig;
 import com.xclhove.xnote.tool.MinioTool;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * 启动时检查minio是否连接成功
@@ -14,23 +14,32 @@ import org.springframework.stereotype.Component;
  * @author xclhove
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
-public class MinioRunner implements ApplicationRunner {
-    private final MinioTool minioTool;
+public class MinioRunner extends AbstractRunner  {
+    @Resource
+    private MinioTool minioTool;
+    
+    public MinioRunner(ApplicationContext applicationContext) {
+        super(applicationContext);
+    }
     
     @Override
-    public void run(ApplicationArguments args) {
+    public void doRun(ApplicationArguments args) {
         checkMinio();
     }
     
     /**
      * 检查minio是否连接成功
      */
-    public void checkMinio() {
+    private void checkMinio() {
+        if (!runnerConfig.getEnableMinioStatusCheckRunner()) {
+            return;
+        }
+        
         try {
             boolean bucketExist = minioTool.bucketExist();
             if (bucketExist) {
+                log.info("minio连接成功！");
                 return;
             }
             

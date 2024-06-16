@@ -5,13 +5,13 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.xclhove.xnote.entity.attribute.NoteKeyword;
 import com.xclhove.xnote.entity.table.Note;
 import com.xclhove.xnote.service.NoteService;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,20 +21,29 @@ import java.util.List;
  * @author xclhove
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
-public class XnoteRunner implements ApplicationRunner {
-    private final NoteService noteService;
-    @Value("${xnote.keywords.convert-enable: false}")
-    private boolean enableKeywordsConvert;
+@Order
+public class NoteRunner extends AbstractRunner {
+    @Resource
+    private NoteService noteService;
     
-    @Override
-    public void run(ApplicationArguments args) {
-        convertKeywords();
+    public NoteRunner(ApplicationContext applicationContext) {
+        super(applicationContext);
     }
     
+    @Override
+    public void doRun(ApplicationArguments args) {
+        convertKeywords();
+        replaceImageUrl();
+    }
+    
+    /**
+     * 转换关键词的存储结构
+     */
     private void convertKeywords() {
-        if (!enableKeywordsConvert) return;
+        if (!runnerConfig.getEnableKeywordsConvertRunner()) {
+            return;
+        }
         
         try {
             log.info("关键词转化……");
@@ -68,8 +77,24 @@ public class XnoteRunner implements ApplicationRunner {
             log.info("关键词转化已经完成！");
             System.exit(0);
         } catch (Exception e) {
-            log.info("无需转化！");
+            log.info("关键词无需转化！");
+        }
+    }
+    
+    /**
+     * 替换笔记中的图片地址
+     */
+    private void replaceImageUrl() {
+        if (!runnerConfig.getEnableImageUrlReplaceRunner()) {
             return;
         }
+        
+        List<Note> list = new ArrayList<>();
+        noteService.list().forEach(note -> {
+            note.setContent(note.getContent().replaceAll("xnote.xclhove.top/api", "api.xclhove.top/xnote"));
+            list.add(note);
+        });
+        noteService.updateBatchById(list);
+        log.info("替换图片地址成功！");
     }
 }

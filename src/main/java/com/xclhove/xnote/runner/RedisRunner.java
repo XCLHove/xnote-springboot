@@ -1,11 +1,13 @@
 package com.xclhove.xnote.runner;
 
 import com.xclhove.xnote.tool.RedisTool;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
 
 /**
  * 启动时检查redis是否连接成功
@@ -13,23 +15,34 @@ import org.springframework.stereotype.Component;
  * @author xclhove
  */
 @Component
-@RequiredArgsConstructor
 @Slf4j
-public class RedisRunner implements ApplicationRunner {
-    private final RedisTool redisTool;
+@Order(1)
+public class RedisRunner extends AbstractRunner {
+    @Resource
+    private RedisTool redisTool;
+    
+    public RedisRunner(ApplicationContext applicationContext) {
+        super(applicationContext);
+    }
     
     @Override
-    public void run(ApplicationArguments args) {
-        checkRedis();
+    public void doRun(ApplicationArguments args) {
+        checkRedisStatus();
     }
     
     /**
      * 检查redis是否连接成功
      */
-    public void checkRedis() {
+    private void checkRedisStatus() {
+        if (!runnerConfig.getEnableRedisStatusCheckRunner()) {
+            return;
+        }
+
         if (!redisTool.connected()) {
             log.error("redis连接失败！请检查配置文件和redis是否启动。");
             System.exit(1);
+            return;
         }
+        log.info("redis连接成功！");
     }
 }

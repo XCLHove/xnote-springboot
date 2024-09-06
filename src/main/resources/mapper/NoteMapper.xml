@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xclhove.xnote.mapper.NoteMapper">
+
+    <select id="search" resultType="com.xclhove.xnote.pojo.table.Note">
+        SELECT id, title,user_id, release_time, update_time, is_public, type_id FROM note
+        <where>
+            (is_public = 1
+            <if test="userId != null">
+                OR user_id = #{userId}
+            </if>)
+            <if test="search != null and search != ''">
+                AND (title LIKE concat('%', #{search}, '%') OR content LIKE concat('%', #{search}, '%'))
+            </if>
+        ${ew.customSqlSegment}
+        </where>
+    </select>
+</mapper>

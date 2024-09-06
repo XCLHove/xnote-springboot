@@ -1,0 +1,5 @@
+#flyway
+spring.flyway:
+  enabled: true
+  # flyway 的 clean 命令会删除指定 schema 下的所有 table, 生产务必禁掉。
+  clean-disabled: true

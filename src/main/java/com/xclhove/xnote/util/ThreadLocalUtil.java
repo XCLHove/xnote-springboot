@@ -11,6 +11,15 @@ import java.util.Map;
 public class ThreadLocalUtil {
     private final static ThreadLocal<Map<String, Object>> THREAD_LOCAL = new ThreadLocal<>();
     
+    private static Map<String, Object> getDataMap() {
+        Map<String, Object> dataMap = THREAD_LOCAL.get();
+        if (dataMap == null) {
+            dataMap = new HashMap<>();
+        }
+        
+        return dataMap;
+    }
+    
     /**
      * 获取数据
      *
@@ -18,7 +27,7 @@ public class ThreadLocalUtil {
      * @return 数据值
      */
     public static Object get(String name) {
-        Map<String, Object> dataMap = THREAD_LOCAL.get();
+        Map<String, Object> dataMap = getDataMap();
         return dataMap.get(name);
     }
     
@@ -30,7 +39,7 @@ public class ThreadLocalUtil {
      * @param <T>
      */
     public static <T> T get(String name, Class<T> resultType) {
-        Map<String, Object> dataMap = THREAD_LOCAL.get();
+        Map<String, Object> dataMap = getDataMap();
         return (T) dataMap.get(name);
     }
     
@@ -40,8 +49,8 @@ public class ThreadLocalUtil {
      * @param value 数据值
      */
     public static void set(String name, Object value) {
-        Map<String, Object> dataMap = THREAD_LOCAL.get();
-        if (dataMap == null) dataMap = new HashMap<>();
+        Map<String, Object> dataMap = getDataMap();
+        
         dataMap.put(name, value);
         THREAD_LOCAL.set(dataMap);
     }

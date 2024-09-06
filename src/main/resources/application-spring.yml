@@ -1,0 +1,5 @@
+spring.application.name: xnote
+spring.main.banner-mode: off
+#为null时不返回属性
+spring.jackson.default-property-inclusion: NON_EMPTY
+spring.main.allow-circular-references: true

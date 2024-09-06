@@ -1,67 +1,148 @@
 package com.xclhove.xnote.tool;
 
-import com.alibaba.fastjson2.JSON;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.RedisConnectionFailureException;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
- * redis工具类
- *
  * @author xclhove
  */
 @Component
 @RequiredArgsConstructor
-public class RedisTool {
-    private final RedisTemplate<String, String> redisTemplate;
+public final class RedisTool {
+    private final StringRedisTemplate stringRedisTemplate;
     
-    public boolean connected() {
-        try {
-            redisTemplate.opsForValue().get("*");
-            return true;
-        } catch (RedisConnectionFailureException e) {
-            return false;
+    @FunctionalInterface
+    public interface Getter<R> {
+        /**
+         * 从数据库中查询数据
+         */
+        R getFormDatabase();
+    }
+    
+    @FunctionalInterface
+    public interface Serializer<T, R> {
+        /**
+         * 序列化以便存到 redis
+         */
+        R serialize(T dataFormDatabase);
+    }
+    
+    @FunctionalInterface
+    public interface DeSerializer<T, R> {
+        /**
+         * 反序列化 redis 中存储的数据
+         */
+        R deserialize(T dataFormRedis);
+    }
+    
+    /**
+     * 防缓存穿透
+     */
+    public <R> R getUseStringAntiCachePassThrough(
+            String redisKey,
+            Getter<R> getter,
+            Serializer<R, String> serializer,
+            DeSerializer<String, R> deSerializer
+    ) {
+        String valueInRedis = stringRedisTemplate.opsForValue().get(redisKey);
+        if (valueInRedis == null) {
+            R objectInDatabase = getter.getFormDatabase();
+            
+            String value = "";
+            if (objectInDatabase != null) {
+                value = serializer.serialize(objectInDatabase);
+            }
+            stringRedisTemplate.opsForValue().set(redisKey, value);
+            
+            return objectInDatabase;
         }
+        
+        if (valueInRedis.isEmpty()) {
+            return null;
+        }
+        
+        R objectInRedis = deSerializer.deserialize(valueInRedis);
+        return objectInRedis;
     }
     
-    public void setValue(String key, Object value) {
-        redisTemplate.opsForValue().set(key, JSON.toJSONString(value));
+    /**
+     * 防缓存穿透
+     */
+    public <R> R getUseStringAntiCachePassThrough(
+            String redisKey,
+            Getter<R> getter,
+            Serializer<R, String> serializer,
+            DeSerializer<String, R> deSerializer,
+            long timeout,
+            TimeUnit timeUnit
+    ) {
+        String valueInRedis = stringRedisTemplate.opsForValue().get(redisKey);
+        if (valueInRedis == null) {
+            R objectInDatabase = getter.getFormDatabase();
+            
+            String value = "";
+            if (objectInDatabase != null) {
+                value = serializer.serialize(objectInDatabase);
+            }
+            stringRedisTemplate.opsForValue().set(redisKey, value, timeout, timeUnit);
+            
+            return objectInDatabase;
+        }
+        
+        if (valueInRedis.isEmpty()) {
+            return null;
+        }
+        
+        R objectInRedis = deSerializer.deserialize(valueInRedis);
+        return objectInRedis;
     }
     
-    public void setValue(String key, Object value, long timeout, TimeUnit unit) {
-        redisTemplate.opsForValue().set(key, JSON.toJSONString(value), timeout, unit);
+    public <R> R getUseString(
+            String redisKey,
+            Getter<R> getter,
+            Serializer<R, String> serializer,
+            DeSerializer<String, R> deSerializer
+    ) {
+        String valueInRedis = stringRedisTemplate.opsForValue().get(redisKey);
+        if (valueInRedis == null || valueInRedis.isEmpty()) {
+            R objectInDatabase = getter.getFormDatabase();
+            
+            if (objectInDatabase != null) {
+                String value = serializer.serialize(objectInDatabase);
+                stringRedisTemplate.opsForValue().set(redisKey, value);
+            }
+            
+            return objectInDatabase;
+        }
+        
+        R objectInRedis = deSerializer.deserialize(valueInRedis);
+        return objectInRedis;
     }
     
-    public Object getValue(String key) {
-        String value = redisTemplate.opsForValue().get(key);
-        return JSON.parse(value);
-    }
-    
-    public <T> T getValue(String key, Class<T> resultType) {
-        return (T) getValue(key);
-    }
-    
-    public Boolean deleteValue(String key) {
-        return redisTemplate.delete(key);
-    }
-    
-    public void setHashValue(String key, Object hashKey, Object value) {
-        redisTemplate.opsForHash().put(key, hashKey.toString(), value);
-    }
-    
-    public Object getHashValue(String key, Object hashKey) {
-        return redisTemplate.opsForHash().get(key, hashKey.toString());
-    }
-    
-    public <T> T getHashValue(String key, Object hashKey, Class<T> resultType) {
-        return (T) getHashValue(key, hashKey.toString());
-    }
-    
-    public Long deleteHashValue(String key, Object... hashKeys) {
-        return redisTemplate.opsForHash().delete(key, Arrays.toString(hashKeys));
+    public <R> R getUseString(
+            String redisKey,
+            Getter<R> getter,
+            Serializer<R, String> serializer,
+            DeSerializer<String, R> deSerializer,
+            long timeout,
+            TimeUnit timeUnit
+    ) {
+        String valueInRedis = stringRedisTemplate.opsForValue().get(redisKey);
+        if (valueInRedis == null || valueInRedis.isEmpty()) {
+            R objectInDatabase = getter.getFormDatabase();
+            
+            if (objectInDatabase != null) {
+                String value = serializer.serialize(objectInDatabase);
+                stringRedisTemplate.opsForValue().set(redisKey, value, timeout, timeUnit);
+            }
+            
+            return objectInDatabase;
+        }
+        
+        R objectInRedis = deSerializer.deserialize(valueInRedis);
+        return objectInRedis;
     }
 }

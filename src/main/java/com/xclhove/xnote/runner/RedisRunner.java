@@ -1,13 +1,16 @@
 package com.xclhove.xnote.runner;
 
-import com.xclhove.xnote.tool.RedisTool;
+import com.xclhove.xnote.config.XnoteConfig;
+import com.xclhove.xnote.constant.RedisKey;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.context.ApplicationContext;
-import org.springframework.core.annotation.Order;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 启动时检查redis是否连接成功
@@ -16,17 +19,13 @@ import javax.annotation.Resource;
  */
 @Component
 @Slf4j
-@Order(1)
-public class RedisRunner extends AbstractRunner {
-    @Resource
-    private RedisTool redisTool;
-    
-    public RedisRunner(ApplicationContext applicationContext) {
-        super(applicationContext);
-    }
+@RequiredArgsConstructor
+public class RedisRunner implements ApplicationRunner {
+    private final StringRedisTemplate stringRedisTemplate;
+    private final XnoteConfig xnoteConfig;
     
     @Override
-    public void doRun(ApplicationArguments args) {
+    public void run(ApplicationArguments args) {
         checkRedisStatus();
     }
     
@@ -34,15 +33,26 @@ public class RedisRunner extends AbstractRunner {
      * 检查redis是否连接成功
      */
     private void checkRedisStatus() {
-        if (!runnerConfig.getEnableRedisStatusCheckRunner()) {
+        if (!xnoteConfig.runner.getEnableCheckRedisStatus()) {
+            log.info("跳过检查 redis 服务状态");
             return;
         }
 
-        if (!redisTool.connected()) {
-            log.error("redis连接失败！请检查配置文件和redis是否启动。");
+        if (!connected()) {
+            log.error("redis 连接失败！请检查配置文件和redis是否启动。");
             System.exit(1);
             return;
         }
-        log.info("redis连接成功！");
+        log.info("redis 连接成功！");
+    }
+    
+    private boolean connected() {
+        try {
+            String redisKey = RedisKey.join(RedisKey.PROJECT, RedisKey.REDIS_CONNECT_TEST);
+            stringRedisTemplate.opsForValue().set(redisKey, "test", 1, TimeUnit.SECONDS);
+            return true;
+        } catch (RedisConnectionFailureException e) {
+            return false;
+        }
     }
 }

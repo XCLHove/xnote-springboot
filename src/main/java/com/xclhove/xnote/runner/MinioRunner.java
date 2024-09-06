@@ -1,12 +1,12 @@
 package com.xclhove.xnote.runner;
 
+import com.xclhove.xnote.config.XnoteConfig;
 import com.xclhove.xnote.tool.MinioTool;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.context.ApplicationContext;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.Resource;
 
 /**
  * 启动时检查minio是否连接成功
@@ -15,16 +15,13 @@ import javax.annotation.Resource;
  */
 @Component
 @Slf4j
-public class MinioRunner extends AbstractRunner  {
-    @Resource
-    private MinioTool minioTool;
-    
-    public MinioRunner(ApplicationContext applicationContext) {
-        super(applicationContext);
-    }
+@RequiredArgsConstructor
+public class MinioRunner implements ApplicationRunner {
+    private final MinioTool minioTool;
+    private final XnoteConfig xnoteConfig;
     
     @Override
-    public void doRun(ApplicationArguments args) {
+    public void run(ApplicationArguments args) {
         checkMinio();
     }
     
@@ -32,19 +29,20 @@ public class MinioRunner extends AbstractRunner  {
      * 检查minio是否连接成功
      */
     private void checkMinio() {
-        if (!runnerConfig.getEnableMinioStatusCheckRunner()) {
+        if (!xnoteConfig.runner.getEnableCheckMinioStatus()) {
+            log.info("跳过检查 minio 服务状态");
             return;
         }
         
         try {
             boolean bucketExist = minioTool.bucketExist();
             if (bucketExist) {
-                log.info("minio连接成功！");
+                log.info("minio 连接成功！");
                 return;
             }
             
             log.info("minio存储桶未创建，创建存储桶……");
-            bucketExist = minioTool.creatBucket();
+            bucketExist = minioTool.createBucket();
             
             if (!bucketExist) {
                 log.error("创建存储桶失败！");

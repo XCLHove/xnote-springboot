@@ -1,12 +1,11 @@
 package com.xclhove.xnote.exception;
 
-import com.xclhove.xnote.enums.result.ResultType;
+import com.xclhove.xnote.enums.ResultType;
 
 /**
- * IP 频率异常
  * @author xclhove
  */
-public class IpFrequencyException extends ServiceException{
+public class IpFrequencyException extends AbstractServiceException {
     public IpFrequencyException() {
         this(ResultType.IP_FREQUENCY_EXCEPTION.getMessage());
     }

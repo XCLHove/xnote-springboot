@@ -1,6 +1,6 @@
 package com.xclhove.xnote.config;
 
-import com.xclhove.xnote.Interceptor.ServiceInterceptor;
+import com.xclhove.xnote.interceptor.ServiceInterceptor;
 import com.xclhove.xnote.util.SubclassFinder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -23,15 +23,17 @@ public class InterceptorConfig implements WebMvcConfigurer {
     
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 获取ServiceInterceptor的子类
+        // 获取 ServiceInterceptor 的子类拦截器
         Set<BeanDefinition> subclasses = SubclassFinder.findSubclasses(ServiceInterceptor.class);
         
-        // 将ServiceInterceptor的子类注册到拦截器
-        subclasses.forEach(c -> {
+        // 注册子类拦截器
+        subclasses.forEach(beanDefinition -> {
             try {
-                ServiceInterceptor interceptor = (ServiceInterceptor) applicationContext.getBean(Class.forName(c.getBeanClassName()));
+                String className = beanDefinition.getBeanClassName();
+                Class<ServiceInterceptor> intercepterClass = (Class<ServiceInterceptor>) Class.forName(className);
+                ServiceInterceptor interceptor = applicationContext.getBean(intercepterClass);
                 registry.addInterceptor(interceptor);
-            } catch (Exception e) {
+            } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
         });

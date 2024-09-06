@@ -1,0 +1,9 @@
+mybatis-plus:
+  global-config:
+   banner: off
+   db-config:
+     #数据库id自增
+     id-type: auto
+  configuration:
+    #MybatisEnumTypeHandler
+    default-enum-type-handler: com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler

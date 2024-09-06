@@ -12,10 +12,16 @@ import java.util.Set;
  */
 public class SubclassFinder {
     
+    /**
+     * 查找子类
+     */
     public static Set<BeanDefinition> findSubclasses(Class<?> clazz) {
-        return findSubclasses(clazz, "com.xclhove.xnote");
+        return findSubclasses(clazz, PackageUtil.getBasePackage());
     }
     
+    /**
+     * 查找子类
+     */
     public static Set<BeanDefinition> findSubclasses(Class<?> clazz, String basePackage) {
         ClassPathScanningCandidateComponentProvider provider = new ClassPathScanningCandidateComponentProvider(false);
         provider.addIncludeFilter(new AssignableTypeFilter(clazz));

@@ -19,10 +19,10 @@ public class EmailUtil {
      *
      * @param host     主机名称或IP地址，如：smtp.qq.com
      * @param port     端口号，如：465，587，25
-     * @param username 邮箱账号，如：example@qq.com
+     * @param username 邮箱账号，如：sender@qq.com
      * @param password 邮箱密码
-     * @param from     发送方邮箱地址，如：example@qq.com
-     * @param to       接收方邮箱地址，如：example@qq.com
+     * @param from     发送方邮箱地址，如：sender@qq.com
+     * @param to       接收方邮箱地址，如：reciver@qq.com
      * @param subject  邮件主题
      * @param text     邮件正文
      * @throws MessagingException 异常信息
@@ -43,8 +43,7 @@ public class EmailUtil {
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
         message.setSubject(subject);
-        String finalText = "\n------------------分割线------------------\n";
-        message.setText(text + finalText);
+        message.setText(text);
         
         // 发送邮件
         Transport transport = session.getTransport("smtp");

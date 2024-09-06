@@ -15,11 +15,26 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "minio")
 public class MinioConfig {
-    
+    /**
+     * Minio服务所在地址
+     */
     private String endpoint;
-    private String accessKey;
-    private String secretKey;
+    /**
+     * Minio服务外网访问地址
+     */
+    private String remoteEndpoint;
+    /**
+     * 存储桶名称
+     */
     private String bucketName;
+    /**
+     * 访问的key
+     */
+    private String accessKey;
+    /**
+     * 访问的秘钥
+     */
+    private String secretKey;
     
     @Bean
     public MinioClient minioClient() {

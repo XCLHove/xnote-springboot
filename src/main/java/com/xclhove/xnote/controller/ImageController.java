@@ -1,20 +1,27 @@
 package com.xclhove.xnote.controller;
 
-import com.xclhove.xnote.Interceptor.UserJwtInterceptor;
-import com.xclhove.xnote.constant.TreadLocalKey;
-import com.xclhove.xnote.entity.dto.ImagePageDTO;
-import com.xclhove.xnote.entity.table.Image;
+
+import cn.hutool.core.bean.BeanUtil;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xclhove.xnote.exception.ImageServiceException;
+import com.xclhove.xnote.interceptor.UserTokenInterceptor;
+import com.xclhove.xnote.pojo.table.User;
+import com.xclhove.xnote.pojo.vo.PageVO;
+import com.xclhove.xnote.pojo.vo.SearchUserImageVO;
 import com.xclhove.xnote.service.ImageService;
-import com.xclhove.xnote.util.Result;
-import com.xclhove.xnote.util.ThreadLocalUtil;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import com.xclhove.xnote.service.UserImageService;
+import com.xclhove.xnote.tool.Result;
+import com.xclhove.xnote.tool.ThreadLocalTool;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
-import javax.validation.constraints.Pattern;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -24,74 +31,67 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/image")
-@Api(tags = "图片相关接口")
 @RequiredArgsConstructor
+@Validated
+@Slf4j
 public class ImageController {
     private final ImageService imageService;
+    private final UserImageService userImageService;
     
-    @GetMapping("downloadByName/{imageName}")
-    @ApiOperation(value = "下载图片")
-    public void downloadByName(HttpServletResponse response, @PathVariable String imageName) {
-        imageService.downloadByName(response, imageName);
-    }
-    
-    @GetMapping("downloadById/{imageId}")
-    @ApiOperation(value = "下载图片")
-    @UserJwtInterceptor.UserJwtIntercept()
-    public void downloadById(HttpServletResponse response,
-                             @PathVariable
-                             @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
-                             Integer imageId) {
-        Integer userId = (Integer) ThreadLocalUtil.get(TreadLocalKey.ID);
-        imageService.downloadById(response, userId, imageId);
-    }
-    
-    @PutMapping
-    @ApiOperation(value = "上传图片")
-    @UserJwtInterceptor.UserJwtIntercept
-    public Result<Image> upload(MultipartFile uploadImage) {
-        Integer id = (Integer) ThreadLocalUtil.get("id");
-        Image image = imageService.upload(id, uploadImage);
-        return Result.success(image);
-    }
-    
-    @PostMapping("/deleteByIds")
-    @ApiOperation(value = "通过id删除图片")
-    @UserJwtInterceptor.UserJwtIntercept
-    public Result<Object> deleteByIds(@RequestBody List<Integer> ids) {
-        Integer userId = (Integer) ThreadLocalUtil.get(TreadLocalKey.ID);
-        imageService.deleteByIds(userId, ids);
-        return Result.success();
-    }
-    
+    /**
+     * 上传图片
+     */
     @PostMapping
-    @ApiOperation(value = "修改图片")
-    @UserJwtInterceptor.UserJwtIntercept
-    public Result<Object> change(@RequestBody Image image) {
-        Integer userId = (Integer) ThreadLocalUtil.get("id");
-        image.setUserId(userId);
-        imageService.change(image);
+    @UserTokenInterceptor.UserTokenIntercept()
+    public Result<String> upload(@NotNull(message = "图片不能为空") MultipartFile uploadImageFile) {
+        User user = ThreadLocalTool.getUser();
+        
+        String imageName = imageService.upload(user, uploadImageFile);
+        return Result.success(imageName);
+    }
+    
+    /**
+     * 预览图片
+     */
+    @GetMapping("/name/{imageName}")
+    public void previewImage(HttpServletResponse response, @PathVariable String imageName) {
+        String imageUrl = imageService.getImageUrlByNameWithRedis(imageName);
+        if (imageUrl == null) {
+            throw new ImageServiceException("图片不存在");
+        }
+        try {
+            response.setStatus(302);
+            response.sendRedirect(imageUrl);
+        } catch (IOException e) {
+            log.error("重定向失败", e);
+            throw new ImageServiceException("重定向失败");
+        }
+    }
+    
+    /**
+     * 搜索自己的图片
+     */
+    @GetMapping("me")
+    @UserTokenInterceptor.UserTokenIntercept()
+    public Result<PageVO<SearchUserImageVO>> searchSelfImage(
+            @RequestParam(defaultValue = "1", required = false) Integer page,
+            @RequestParam(defaultValue = "10", required = false) Integer size,
+            @RequestParam(required = false) String search
+    ) {
+        User user = ThreadLocalTool.getUser();
+        Page<SearchUserImageVO> pageResult = userImageService.searchUserImage(new Page<>(page, size), user, search);
+        PageVO<SearchUserImageVO> pageVO = BeanUtil.copyProperties(pageResult, PageVO.class);
+        return Result.success(pageVO);
+    }
+    
+    /**
+     * 删除图片
+     */
+    @DeleteMapping
+    @UserTokenInterceptor.UserTokenIntercept
+    public Result<?> delete(@NotEmpty(message = "用户图片ID不能为空") @RequestParam List<Integer> userImageIds) {
+        User user = ThreadLocalTool.getUser();
+        userImageService.removeUserImageByIds(user, userImageIds);
         return Result.success();
-    }
-    
-    @GetMapping("/{imageId}")
-    @ApiOperation(value = "获取图片信息")
-    @UserJwtInterceptor.UserJwtIntercept
-    public Result<Image> get(@PathVariable
-                             @Pattern(regexp = "^\\d+$", message = "图片id必须为数字")
-                             Integer imageId) {
-        Integer userId = (Integer) ThreadLocalUtil.get("id");
-        Image image = imageService.get(userId, imageId);
-        return Result.success(image);
-    }
-    
-    @PostMapping("/page")
-    @ApiOperation(value = "分页获取图片")
-    @UserJwtInterceptor.UserJwtIntercept
-    public Result<ImagePageDTO> page(@RequestBody ImagePageDTO pageDTO) {
-        Integer userId = (Integer) ThreadLocalUtil.get("id");
-        pageDTO.setUserId(userId);
-        ImagePageDTO imagePageDTO = imageService.page(pageDTO);
-        return Result.success(imagePageDTO);
     }
 }

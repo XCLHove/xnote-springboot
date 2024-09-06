@@ -1,15 +1,14 @@
 package com.xclhove.xnote.exception;
 
-import com.xclhove.xnote.enums.result.ResultType;
+
+import com.xclhove.xnote.enums.ResultType;
 
 /**
- * 请求路径不存在异常
- *
  * @author xclhove
  */
-public class NotFoundException extends ServiceException {
+public class NotFoundException extends AbstractServiceException {
     public NotFoundException() {
-        this(ResultType.NOT_FOUND_EXCEPTION.getMessage());
+        this(ResultType.NOT_FOUND.getMessage());
     }
     
     public NotFoundException(String message) {
@@ -17,6 +16,6 @@ public class NotFoundException extends ServiceException {
     }
     
     public NotFoundException(String message, Object data) {
-        super(ResultType.NOT_FOUND_EXCEPTION.getStatus(), message, data);
+        super(ResultType.NOT_FOUND.getStatus(), message, data);
     }
 }

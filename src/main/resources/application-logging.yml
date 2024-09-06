@@ -1,0 +1,22 @@
+# 日志配置
+logging:
+  file:
+    # 日志文件名格式
+    name: ${user.home}/logs/${spring.application.name}/${spring.application.name}.log
+  pattern:
+    # 日志记录格式[时间戳] [日志级别] [类名.方法名] [消息文本]
+    #file: xfile-%d{yyyy-MM-dd HH:mm:ss.SSS} %p %C.%M %m %n
+    file: xfile-%d{yyyy-MM-dd HH:mm:ss} %p %C.%M %m %n
+  logback:
+    rollingpolicy:
+      # 根据文件大小归档，超过10MB自动归档，次日启动服务时也会自动归档
+      file-name-pattern: ${user.home}/logs/${spring.application.name}/${spring.application.name}.%d{yyyy-MM-dd}.%i.gz
+      # 最大日志文件大小(默认为10MB)
+      max-file-size: 1MB
+      # 要保留的日志备份的总大小(默认为0B)
+      total-size-cap: 1GB
+      # 保存存档日志文件的最大天数(默认为7天)
+      max-history: 30
+  level:
+    root: info
+    org.elasticsearch: error

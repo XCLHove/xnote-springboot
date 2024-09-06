@@ -1,13 +1,12 @@
 package com.xclhove.xnote.exception;
 
-import com.xclhove.xnote.enums.result.ResultType;
+
+import com.xclhove.xnote.enums.ResultType;
 
 /**
- * 用户业务异常
- *
  * @author xclhove
  */
-public class UserServiceException extends ServiceException {
+public class UserServiceException extends AbstractServiceException {
     public UserServiceException() {
         this(ResultType.USER_SERVICE_EXCEPTION.getMessage());
     }

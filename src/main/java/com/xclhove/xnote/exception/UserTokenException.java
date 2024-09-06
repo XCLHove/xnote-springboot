@@ -1,13 +1,12 @@
 package com.xclhove.xnote.exception;
 
-import com.xclhove.xnote.enums.result.ResultType;
+
+import com.xclhove.xnote.enums.ResultType;
 
 /**
- * 用户token异常
- *
  * @author xclhove
  */
-public class UserTokenException extends ServiceException {
+public class UserTokenException extends AbstractServiceException {
     public UserTokenException() {
         this(ResultType.USER_TOKEN_EXCEPTION.getMessage());
     }

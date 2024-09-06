@@ -1,13 +1,12 @@
 package com.xclhove.xnote.exception;
 
-import com.xclhove.xnote.enums.result.ResultType;
+
+import com.xclhove.xnote.enums.ResultType;
 
 /**
- * 笔记异常
- *
  * @author xclhove
  */
-public class NoteServiceException extends ServiceException {
+public class NoteServiceException extends AbstractServiceException {
     public NoteServiceException() {
         this(ResultType.NOTE_SERVICE_EXCEPTION.getMessage());
     }

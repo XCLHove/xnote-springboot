@@ -8,6 +8,32 @@ XNote is an open-source web-based Markdown note management application that supp
 
 ---
 
+## Deploying with Docker
+
+### Frontend
+
+```shell
+docker run -d -it \
+  -p 3000:3000 \
+  --name xnote-nuxt \
+  ghcr.io/xclhove/xnote-nuxt
+```
+
+* `API_SERVER_URL`: The backend API address, such as “http://localhost:8080”.
+* `IPC`: The record number, such as: “蜀IPC备-xxxxxxx号”.
+
+### Backend
+
+```shell
+docker run -d -it \
+  -p 8080:8080 \
+  --name xnote-springboot \
+  -v xnote-config:/app/config \
+  ghcr.io/xclhove/xnote-springboot
+```
+
+---
+
 ## Technology Stack
 
 1. [Vue3](https://github.com/vuejs/)

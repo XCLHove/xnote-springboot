@@ -8,6 +8,32 @@ XNote 是一个开源 Web 端的 Markdown 笔记管理应用，支持在线编�
 
 ---
 
+## 使用 Docker 部署
+
+### 前端
+
+```shell
+docker run -d -it \
+  -p 3000:3000 \
+  --name xnote-nuxt \
+  ghcr.io/xclhove/xnote-nuxt
+```
+
+* `API_SERVER_URL`: 后端 API 地址，如 “http://localhost:8080”。
+* `IPC`: 备案号，如：“蜀IPC备-xxxxxxx号”。
+
+### 后端
+
+```shell
+docker run -d -it \
+  -p 8080:8080 \
+  --name xnote-springboot \
+  -v xnote-config:/app/config \
+  ghcr.io/xclhove/xnote-springboot
+```
+
+---
+
 ## 技术栈
 
 1. [Vue3](https://github.com/vuejs/)

@@ -28,12 +28,27 @@ public class VerificationCodeService {
     private final StringRedisTemplate stringRedisTemplate;
     private final XnoteConfig xnoteConfig;
     
+    private String getImageVerificationCodeRedisKeyByIpAddress(String ipAddress) {
+        return RedisKey.join(RedisKey.VerificationCode.IP, ipAddress);
+    }
+    
     private String getRedisKey(String email) {
         return RedisKey.join(RedisKey.VerificationCode.EMAIL, email);
     }
     
     private String generate() {
         return VerificationCodeUtil.generate(VERIFICATION_CODE_LENGTH, true);
+    }
+    
+    public String generateImageVerificationCode(String ipAddress) {
+        String simpleCode = VerificationCodeUtil.generate(4, true);
+        stringRedisTemplate.opsForValue().set(
+                getImageVerificationCodeRedisKeyByIpAddress(ipAddress),
+                simpleCode,
+                60,
+                TimeUnit.SECONDS
+        );
+        return simpleCode;
     }
     
     private void saveToRedis(String code, String email) {
@@ -66,6 +81,19 @@ public class VerificationCodeService {
             deleteInRedis(email);
         }
         return valid;
+    }
+    
+    public boolean verifyImageVerificationCode(String imageVerificationCode, String ipAddress) {
+        String redisKey = getImageVerificationCodeRedisKeyByIpAddress(ipAddress);
+        String codeInRedis = stringRedisTemplate.opsForValue().get(redisKey);
+        if (StrUtil.isBlank(codeInRedis)) {
+            return false;
+        }
+        if (!codeInRedis.equals(imageVerificationCode)) {
+            return false;
+        }
+        stringRedisTemplate.delete(redisKey);
+        return true;
     }
     
     public int sendToEmail(String email) {

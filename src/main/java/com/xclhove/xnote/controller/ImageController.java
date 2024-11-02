@@ -77,12 +77,12 @@ public class ImageController {
     @GetMapping("me")
     @UserTokenIntercept()
     public Result<PageVO<SearchUserImageVO>> searchSelfImage(
-            @RequestParam(defaultValue = "1", required = false) Integer page,
+            @RequestParam(defaultValue = "1", required = false) Integer current,
             @RequestParam(defaultValue = "10", required = false) Integer size,
             @RequestParam(required = false) String search,
             @UserInfoFormToken User user
     ) {
-        Page<SearchUserImageVO> pageResult = userImageService.searchUserImage(new Page<>(page, size), user, search);
+        Page<SearchUserImageVO> pageResult = userImageService.searchUserImage(new Page<>(current, size), user, search);
         PageVO<SearchUserImageVO> pageVO = BeanUtil.copyProperties(pageResult, PageVO.class);
         return Result.success(pageVO);
     }

@@ -1,5 +1,6 @@
 package com.xclhove.xnote.util;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,9 +27,14 @@ public class ThreadLocalUtil {
      * @param name 数据名
      * @return 数据值
      */
+    @Nullable
     public static Object get(String name) {
         Map<String, Object> dataMap = getDataMap();
-        return dataMap.get(name);
+        Object value = dataMap.get(name);
+        if (value == null) {
+            return null;
+        }
+        return value;
     }
     
     /**
@@ -38,9 +44,14 @@ public class ThreadLocalUtil {
      * @return 数据值
      * @param <T>
      */
+    @Nullable
     public static <T> T get(String name, Class<T> resultType) {
         Map<String, Object> dataMap = getDataMap();
-        return (T) dataMap.get(name);
+        Object value = dataMap.get(name);
+        if (value == null) {
+            return null;
+        }
+        return (T) value;
     }
     
     /**

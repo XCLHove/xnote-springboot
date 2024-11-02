@@ -5,9 +5,11 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xclhove.xnote.exception.ImageServiceException;
 import com.xclhove.xnote.interceptor.UserTokenInterceptor;
+import com.xclhove.xnote.interceptor.annotations.UserTokenIntercept;
 import com.xclhove.xnote.pojo.table.User;
 import com.xclhove.xnote.pojo.vo.PageVO;
 import com.xclhove.xnote.pojo.vo.SearchUserImageVO;
+import com.xclhove.xnote.resolver.annotations.UserInfoFormToken;
 import com.xclhove.xnote.service.ImageService;
 import com.xclhove.xnote.service.UserImageService;
 import com.xclhove.xnote.tool.Result;
@@ -42,10 +44,11 @@ public class ImageController {
      * 上传图片
      */
     @PostMapping
-    @UserTokenInterceptor.UserTokenIntercept()
-    public Result<String> upload(@NotNull(message = "图片不能为空") MultipartFile uploadImageFile) {
-        User user = ThreadLocalTool.getUser();
-        
+    @UserTokenIntercept()
+    public Result<String> upload(
+            @NotNull(message = "图片不能为空") MultipartFile uploadImageFile,
+            @UserInfoFormToken User user
+    ) {
         String imageName = imageService.upload(user, uploadImageFile);
         return Result.success(imageName);
     }
@@ -72,13 +75,13 @@ public class ImageController {
      * 搜索自己的图片
      */
     @GetMapping("me")
-    @UserTokenInterceptor.UserTokenIntercept()
+    @UserTokenIntercept()
     public Result<PageVO<SearchUserImageVO>> searchSelfImage(
             @RequestParam(defaultValue = "1", required = false) Integer page,
             @RequestParam(defaultValue = "10", required = false) Integer size,
-            @RequestParam(required = false) String search
+            @RequestParam(required = false) String search,
+            @UserInfoFormToken User user
     ) {
-        User user = ThreadLocalTool.getUser();
         Page<SearchUserImageVO> pageResult = userImageService.searchUserImage(new Page<>(page, size), user, search);
         PageVO<SearchUserImageVO> pageVO = BeanUtil.copyProperties(pageResult, PageVO.class);
         return Result.success(pageVO);
@@ -88,9 +91,12 @@ public class ImageController {
      * 删除图片
      */
     @DeleteMapping
-    @UserTokenInterceptor.UserTokenIntercept
-    public Result<?> delete(@NotEmpty(message = "用户图片ID不能为空") @RequestParam List<Integer> userImageIds) {
-        User user = ThreadLocalTool.getUser();
+    @UserTokenIntercept
+    public Result<?> delete(
+            @NotEmpty(message = "用户图片ID不能为空")
+            @RequestParam List<Integer> userImageIds,
+            @UserInfoFormToken User user
+    ) {
         userImageService.removeUserImageByIds(user, userImageIds);
         return Result.success();
     }

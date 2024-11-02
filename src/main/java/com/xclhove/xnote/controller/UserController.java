@@ -4,8 +4,11 @@ package com.xclhove.xnote.controller;
 import cn.hutool.core.bean.BeanUtil;
 import com.xclhove.xnote.exception.UserServiceException;
 import com.xclhove.xnote.interceptor.UserTokenInterceptor;
+import com.xclhove.xnote.interceptor.annotations.UserTokenIntercept;
 import com.xclhove.xnote.pojo.form.user.*;
 import com.xclhove.xnote.pojo.table.User;
+import com.xclhove.xnote.resolver.annotations.DeviceID;
+import com.xclhove.xnote.resolver.annotations.UserInfoFormToken;
 import com.xclhove.xnote.service.UserService;
 import com.xclhove.xnote.service.VerificationCodeService;
 import com.xclhove.xnote.tool.Result;
@@ -46,9 +49,11 @@ public class UserController {
      * 登录
      */
     @PostMapping("/login")
-    public Result<String> login(@Validated @RequestBody UserLoginForm userLoginForm) {
+    public Result<String> login(
+            @Validated @RequestBody UserLoginForm userLoginForm,
+            @DeviceID String deviceId
+    ) {
         User user = BeanUtil.copyProperties(userLoginForm, User.class);
-        String deviceId = ThreadLocalTool.getDeviceId();
         
         String token = userService.login(user, deviceId);
         return Result.success(token);
@@ -57,11 +62,12 @@ public class UserController {
     /**
      * 注销
      */
-    @UserTokenInterceptor.UserTokenIntercept
+    @UserTokenIntercept
     @PostMapping("/logout")
-    public Result<String> logout() {
-        String deviceId = ThreadLocalTool.getDeviceId();
-        User user = ThreadLocalTool.getUser();
+    public Result<String> logout(
+            @DeviceID String deviceId,
+            @UserInfoFormToken User user
+    ) {
         if (user == null) {
             return Result.success();
         }
@@ -73,7 +79,7 @@ public class UserController {
     /**
      * 根据id获取用户信息
      */
-    @UserTokenInterceptor.UserTokenIntercept
+    @UserTokenIntercept
     @GetMapping("{userId}")
     public Result<User> getById(@PathVariable Integer userId) {
         User user = userService.getByIdWithRedis(userId);
@@ -83,21 +89,21 @@ public class UserController {
     /**
      * 获取自己的用户信息
      */
-    @UserTokenInterceptor.UserTokenIntercept
+    @UserTokenIntercept
     @GetMapping("me")
-    public Result<User> getSelfInfo() {
-        return Result.success(ThreadLocalTool.getUser());
+    public Result<User> getSelfInfo(@UserInfoFormToken User user) {
+        return Result.success(user);
     }
     
     /**
      * 刷新token
      */
-    @UserTokenInterceptor.UserTokenIntercept
+    @UserTokenIntercept
     @GetMapping("new-token")
-    public Result<String> getNewToken() {
-        User user = ThreadLocalTool.getUser();
-        String deviceId = ThreadLocalTool.getDeviceId();
-        
+    public Result<String> getNewToken(
+            @DeviceID String deviceId,
+            @UserInfoFormToken User user
+    ) {
         String token = userService.login(user, deviceId);
         return Result.success(token);
     }
@@ -106,9 +112,11 @@ public class UserController {
      * 更新用户信息
      */
     @PutMapping
-    @UserTokenInterceptor.UserTokenIntercept
-    public Result<?> update(@Validated @RequestBody UserUpdateForm userUpdateForm) {
-        User user = ThreadLocalTool.getUser();
+    @UserTokenIntercept
+    public Result<?> update(
+            @Validated @RequestBody UserUpdateForm userUpdateForm,
+            @UserInfoFormToken User user
+    ) {
         userService.updateCommonInfo(user, userUpdateForm);
         return Result.success();
     }
@@ -117,9 +125,11 @@ public class UserController {
      * 更新密码
      */
     @PutMapping("password")
-    @UserTokenInterceptor.UserTokenIntercept
-    public Result<?> updatePassword(@Validated @RequestBody UserUpdatePasswordForm userUpdatePasswordForm) {
-        User user = ThreadLocalTool.getUser();
+    @UserTokenIntercept
+    public Result<?> updatePassword(
+            @Validated @RequestBody UserUpdatePasswordForm userUpdatePasswordForm,
+            @UserInfoFormToken User user
+    ) {
         userService.updatePassword(user, userUpdatePasswordForm);
         return Result.success();
     }
@@ -128,14 +138,16 @@ public class UserController {
      * 更新邮箱
      */
     @PutMapping("email")
-    @UserTokenInterceptor.UserTokenIntercept
-    public Result<?> updateEmail(@Validated @RequestBody UserUpdateEmailForm userUpdateEmailForm) {
+    @UserTokenIntercept
+    public Result<?> updateEmail(
+            @Validated @RequestBody UserUpdateEmailForm userUpdateEmailForm,
+            @UserInfoFormToken User user
+    ) {
         boolean verified = verificationCodeService.verify(userUpdateEmailForm.getVerificationCode(), userUpdateEmailForm.getEmail());
         if (!verified) {
             throw new UserServiceException("验证码错误！");
         }
         
-        User user = ThreadLocalTool.getUser();
         userService.updateEmail(user, userUpdateEmailForm);
         return Result.success();
     }

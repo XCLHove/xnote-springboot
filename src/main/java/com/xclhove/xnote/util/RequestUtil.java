@@ -1,5 +1,8 @@
 package com.xclhove.xnote.util;
 
+import cn.hutool.crypto.SecureUtil;
+import com.xclhove.xnote.constant.RequestHeaderKey;
+
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -42,5 +45,12 @@ public class RequestUtil {
         String contextPath = request.getContextPath();
         String currentPath = requestUri.substring(contextPath.length());
         return currentPath;
+    }
+    
+    
+    
+    public static String getDeviceIdFormUserAgent(HttpServletRequest request) {
+        String userAgent = request.getHeader(RequestHeaderKey.USER_AGENT);
+        return SecureUtil.md5(userAgent);
     }
 }

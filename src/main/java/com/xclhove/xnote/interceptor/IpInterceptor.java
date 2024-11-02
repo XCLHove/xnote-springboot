@@ -5,6 +5,8 @@ import com.xclhove.xnote.config.XnoteConfig;
 import com.xclhove.xnote.constant.RedisKey;
 import com.xclhove.xnote.constant.TreadLocalKey;
 import com.xclhove.xnote.exception.IpFrequencyException;
+import com.xclhove.xnote.interceptor.annotations.IpIntercept;
+import com.xclhove.xnote.interceptor.annotations.PathFrequencyLimit;
 import com.xclhove.xnote.tool.ThreadLocalTool;
 import com.xclhove.xnote.util.RequestUtil;
 import com.xclhove.xnote.util.ThreadLocalUtil;
@@ -17,10 +19,6 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -32,27 +30,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 public class IpInterceptor extends ServiceInterceptor {
-    @Target(ElementType.METHOD)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface PathFrequencyLimit {
-        /**
-         * 注解所在位置的请求路径的单个ip的每分钟最大请求次数
-         */
-        int maxFrequencyPerMinute() default 0;
-        /**
-         * 警告信息
-         */
-        String message() default "";
-        /**
-         * 请求成功才计做一次,被任意拦截器拦截都不会计做一次
-         */
-        boolean needRequestSuccess() default false;
-    }
-    
-    @Target(ElementType.METHOD)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface DisableIpInterceptor {}
-    
     private final StringRedisTemplate stringRedisTemplate;
     private final XnoteConfig xnoteConfig;
     
@@ -86,8 +63,8 @@ public class IpInterceptor extends ServiceInterceptor {
         }
         
         // 是否拦截
-        DisableIpInterceptor disableIpInterceptor = handlerMethod.getMethod().getAnnotation(DisableIpInterceptor.class);
-        if (disableIpInterceptor != null) {
+        IpIntercept ipIntercept = handlerMethod.getMethod().getAnnotation(IpIntercept.class);
+        if (ipIntercept != null && ipIntercept.disable()) {
             return true;
         }
         

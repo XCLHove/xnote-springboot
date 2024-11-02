@@ -4,6 +4,8 @@ package com.xclhove.xnote.controller;
 import com.xclhove.xnote.exception.VerificationCodeException;
 import com.xclhove.xnote.interceptor.ImageVerificationCodeInterceptor;
 import com.xclhove.xnote.interceptor.IpInterceptor;
+import com.xclhove.xnote.interceptor.annotations.NeedImageVerificationCode;
+import com.xclhove.xnote.interceptor.annotations.PathFrequencyLimit;
 import com.xclhove.xnote.service.VerificationCodeService;
 import com.xclhove.xnote.tool.Result;
 import com.xclhove.xnote.tool.ThreadLocalTool;
@@ -41,8 +43,8 @@ public class VerificationCodeController {
      * 发送验证码到邮箱
      */
     @GetMapping("/send/to-email")
-    @IpInterceptor.PathFrequencyLimit(maxFrequencyPerMinute = 3, message = "发送验证码过于频繁", needRequestSuccess = true)
-    @ImageVerificationCodeInterceptor.NeedImageVerificationCode()
+    @PathFrequencyLimit(maxFrequencyPerMinute = 3, message = "发送验证码过于频繁", needRequestSuccess = true)
+    @NeedImageVerificationCode
     public Result<Integer> sendVerificationCodeToEmail(
             @NotBlank(message = "邮箱不能为空")
             @Email(message = "邮箱格式不正确")
@@ -57,7 +59,7 @@ public class VerificationCodeController {
      * 获取图片验证码的base64
      */
     @GetMapping("/image/base64")
-    @IpInterceptor.PathFrequencyLimit(maxFrequencyPerMinute = 10, message = "获取图片验证码过于频繁")
+    @PathFrequencyLimit(maxFrequencyPerMinute = 10, message = "获取图片验证码过于频繁")
     public Result<String> getVerificationCodeImageBase64() {
         String simpleCode = verificationCodeService.generateImageVerificationCode(ThreadLocalTool.getClientIpAddress());
         try {
@@ -72,7 +74,7 @@ public class VerificationCodeController {
      * 获取图片验证码
      */
     @GetMapping("/image")
-    @IpInterceptor.PathFrequencyLimit(maxFrequencyPerMinute = 10, message = "获取图片验证码过于频繁")
+    @PathFrequencyLimit(maxFrequencyPerMinute = 10, message = "获取图片验证码过于频繁")
     public void getVerificationCodeImage(HttpServletResponse response) {
         String simpleCode = verificationCodeService.generateImageVerificationCode(ThreadLocalTool.getClientIpAddress());
         try {

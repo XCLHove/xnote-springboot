@@ -1,8 +1,8 @@
 package com.xclhove.xnote.interceptor;
 
 import cn.hutool.core.util.StrUtil;
-import com.xclhove.xnote.constant.ParameterName;
 import com.xclhove.xnote.exception.NeedImageVerificationCodeException;
+import com.xclhove.xnote.interceptor.annotations.NeedImageVerificationCode;
 import com.xclhove.xnote.service.VerificationCodeService;
 import com.xclhove.xnote.tool.ThreadLocalTool;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +13,6 @@ import org.springframework.web.method.HandlerMethod;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 
 /**
  * @author xclhove
@@ -26,11 +22,7 @@ import java.lang.annotation.Target;
 @RequiredArgsConstructor
 @Order
 public class ImageVerificationCodeInterceptor extends ServiceInterceptor {
-    @Target(ElementType.METHOD)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface NeedImageVerificationCode {
-        String parameterName() default ParameterName.IMAGE_VERIFICATION_CODE;
-    }
+    
     
     private final VerificationCodeService verificationCodeService;
     

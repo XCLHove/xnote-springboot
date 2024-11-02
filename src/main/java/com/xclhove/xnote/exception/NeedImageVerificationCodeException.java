@@ -1,6 +1,7 @@
 package com.xclhove.xnote.exception;
 
 
+import com.xclhove.xnote.constant.ParameterName;
 import com.xclhove.xnote.enums.ResultType;
 
 /**
@@ -12,7 +13,7 @@ public class NeedImageVerificationCodeException extends AbstractServiceException
     }
     
     public NeedImageVerificationCodeException(String message) {
-        this(message, null);
+        this(message, ParameterName.IMAGE_VERIFICATION_CODE);
     }
     
     public NeedImageVerificationCodeException(String message, Object data) {

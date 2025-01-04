@@ -86,7 +86,7 @@ public class MinioTool {
     }
     
     public String getFileUrl(String fileName) {
-        return String.join("/", minioConfig.getRemoteEndpoint(), minioConfig.getBucketName(), fileName);
+        return String.join("/", minioConfig.getBucketName(), fileName);
     }
     
     /**

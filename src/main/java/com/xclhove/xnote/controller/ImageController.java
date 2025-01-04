@@ -2,7 +2,9 @@ package com.xclhove.xnote.controller;
 
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xclhove.xnote.config.MinioConfig;
 import com.xclhove.xnote.exception.ImageServiceException;
 import com.xclhove.xnote.interceptor.UserTokenInterceptor;
 import com.xclhove.xnote.interceptor.annotations.UserTokenIntercept;
@@ -20,6 +22,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -39,6 +42,7 @@ import java.util.List;
 public class ImageController {
     private final ImageService imageService;
     private final UserImageService userImageService;
+    private final MinioConfig minioConfig;
     
     /**
      * 上传图片
@@ -57,14 +61,20 @@ public class ImageController {
      * 预览图片
      */
     @GetMapping("/name/{imageName}")
-    public void previewImage(HttpServletResponse response, @PathVariable String imageName) {
+    public void previewImage(HttpServletRequest request, HttpServletResponse response, @PathVariable String imageName) {
         String imageUrl = imageService.getImageUrlByNameWithRedis(imageName);
         if (imageUrl == null) {
             throw new ImageServiceException("图片不存在");
         }
+        
+        String remoteEndpoint = minioConfig.getRemoteEndpoint();
+        if (StrUtil.isBlank(remoteEndpoint)) {
+            remoteEndpoint = String.format("http://%s:9000", request.getServerName());
+        }
+        
         try {
             response.setStatus(302);
-            response.sendRedirect(imageUrl);
+            response.sendRedirect(String.join("/", remoteEndpoint, imageUrl));
         } catch (IOException e) {
             log.error("重定向失败", e);
             throw new ImageServiceException("重定向失败");
